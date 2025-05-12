@@ -1,0 +1,18 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace SemanticAlgebra;
+
+// for any type f a, it is isomorphism to forall r. (f a -> r) -> r
+// for our higher kinded type encoding, 
+// ISemantic<f, a, r> ~ (f a) -> r
+// thus IS<f, T> is just wrapper for forall r. (f a -> r) -> r,
+// thus IS<f, T> ~  f t, with out explict 
+public interface IS<out TF, out T> where TF : IKind1<TF>
+{
+    TR Evaluate<TSemantic, TR>(TSemantic semantic) 
+        where TSemantic : ISemantic1<TF, T, TR>;
+}
