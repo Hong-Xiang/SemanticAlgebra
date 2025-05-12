@@ -72,7 +72,7 @@ sealed class OptionDiSemantic<TS, TR>(Func<TS, TR> F)
     : IDiSemantic<Option, TS, TR>
 {
     public ISemantic1<Option, TS, IS<Option, TR>> Forward =>
-        Option.DiMap(Option.IdSemantic<TS>(), Prelude.Id, F);
+        Option.IdSemantic<TS>().DiMap(Prelude.Id, e => e.Select(F));
 
     public TR1 CoEvaluate<TSemantic, TR1>(IS<Option, TS> x, TSemantic semantic)
         where TSemantic : ISemantic1<Option, TR, TR1>
