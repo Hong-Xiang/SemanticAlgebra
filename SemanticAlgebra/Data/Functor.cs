@@ -9,5 +9,5 @@ namespace SemanticAlgebra.Data;
 public interface IFunctor<TF> : IKind1<TF>
     where TF : IFunctor<TF>
 {
-    abstract static ISemantic1<TF, TS, IS<TF, TR>> MapSemantic<TS, TR>(Func<TS, TR> f);
+    abstract static IDiSemantic<TF, TS, TR> MapSemantic<TS, TR>(Func<TS, TR> f);
 }

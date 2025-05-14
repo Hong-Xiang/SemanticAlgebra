@@ -16,3 +16,4 @@ public interface ISemantic1<in TF, in TS, out TR>
     where TF : IKind1<TF>
 {
 }
+

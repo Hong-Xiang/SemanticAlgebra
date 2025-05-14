@@ -19,7 +19,7 @@ public static class Prelude
 
     public static IS<TF, TR> Select<TF, TS, TR>(this IS<TF, TS> fs, Func<TS, TR> f)
         where TF : IFunctor<TF>
-        => fs.Eval(TF.MapSemantic(f));
+        => fs.Eval(TF.MapSemantic(f).Semantic);
 
     public static ISemantic1<TF, TS, TR> DiMap<TF, TS, TI, TO, TR>(
         this ISemantic1<TF, TI, TO> semantic,
@@ -28,5 +28,14 @@ public static class Prelude
     )
         where TF : IDiMapSemantic<TF>
         => TF.DiMap(semantic, f, g);
+
+    public static ISemantic1<TF, T, IS<TF, T>> IdSemantic<TF, T>()
+        where TF : IKind1<TF>
+        => TF.IdSemantic<T>();
+    public static IDiSemantic<TF, TS, TR> DiSemantic<TF, TS, TR>(
+        Func<IS<TF, TS>, IS<TF, TR>> f
+        )
+        where TF : IKind1<TF>
+        => new FuncDiSemantic<TF, TS, TR>(f);
 
 }
