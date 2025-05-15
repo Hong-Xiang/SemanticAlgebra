@@ -15,3 +15,11 @@ public interface ICoSemantic1<out TF, in TS, out TR>
     TO CoEvaluate<TSemantic, TO>(TS x, TSemantic semantic)
         where TSemantic : ISemantic1<TF, TR, TO>;
 }
+
+sealed class FuncCoSemantic<TF, TS, TR>(Func<TS, IS<TF, TR>> F) : ICoSemantic1<TF, TS, TR>
+    where TF : IKind1<TF>
+{
+    public TO CoEvaluate<TSemantic, TO>(TS x, TSemantic semantic)
+        where TSemantic : ISemantic1<TF, TR, TO>
+        => F(x).Evaluate<TSemantic, TO>(semantic);
+}
