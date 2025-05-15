@@ -12,14 +12,12 @@ namespace SemanticAlgebra;
 public interface ICoSemantic1<out TF, in TS, out TR>
     where TF : IKind1<TF>
 {
-    TO CoEvaluate<TSemantic, TO>(TS x, TSemantic semantic)
-        where TSemantic : ISemantic1<TF, TR, TO>;
+    TO CoEvaluate<TO>(TS x, ISemantic1<TF, TR, TO> semantic);
 }
 
 sealed class FuncCoSemantic<TF, TS, TR>(Func<TS, IS<TF, TR>> F) : ICoSemantic1<TF, TS, TR>
     where TF : IKind1<TF>
 {
-    public TO CoEvaluate<TSemantic, TO>(TS x, TSemantic semantic)
-        where TSemantic : ISemantic1<TF, TR, TO>
-        => F(x).Evaluate<TSemantic, TO>(semantic);
+    public TO CoEvaluate<TO>(TS x, ISemantic1<TF, TR, TO> semantic)
+        => F(x).Evaluate(semantic);
 }

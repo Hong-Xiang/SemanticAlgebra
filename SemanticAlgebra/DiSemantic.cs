@@ -25,9 +25,8 @@ sealed class FuncDiSemantic<TF, TS, TR>(
     public ISemantic1<TF, TS, IS<TF, TR>> Semantic =>
         TF.Semantic(F);
 
-    public TO CoEvaluate<TSemantic, TO>(IS<TF, TS> x, TSemantic semantic)
-        where TSemantic : ISemantic1<TF, TR, TO>
-        => F(x).Eval(semantic);
+    public TO CoEvaluate<TO>(IS<TF, TS> x, ISemantic1<TF, TR, TO> semantic)
+        => F(x).Evaluate(semantic);
 }
 
 sealed class ComposedDiSemantic<TF, TS, TM, TR>(
@@ -40,7 +39,6 @@ sealed class ComposedDiSemantic<TF, TS, TM, TR>(
     public ISemantic1<TF, TS, IS<TF, TR>> Semantic =>
         TF.Semantic<TS, IS<TF, TR>>(fs => TF.ToFunc(G)(TF.ToFunc(F)(fs)));
 
-    public TO CoEvaluate<TSemantic, TO>(IS<TF, TS> x, TSemantic semantic)
-        where TSemantic : ISemantic1<TF, TR, TO>
-        => G.CoEvaluate<TSemantic, TO>(x.Eval(F), semantic);
+    public TO CoEvaluate<TO>(IS<TF, TS> x, ISemantic1<TF, TR, TO> semantic)
+        => G.CoEvaluate(x.Evaluate(F), semantic);
 }

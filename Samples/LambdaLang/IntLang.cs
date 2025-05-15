@@ -1,0 +1,58 @@
+﻿using SemanticAlgebra;
+using SemanticAlgebra.Data;
+
+namespace LambdaLang;
+
+public sealed class IntLang : IFunctor<IntLang>
+{
+    public static IS<IntLang, T> LitI<T>(int value) => new LitI<T>(value);
+    public static IS<IntLang, T> Add<T>(T a, T b) => new Add<T>(a, b);
+    public static IDiSemantic<IntLang, T, T> Id<T>()
+        => new IntLangIdSemantic<T>().AsDiSemantic();
+
+    public static IDiSemantic<IntLang, TS, TR> Map<TS, TR>(Func<TS, TR> f)
+        => new IntLangMapSemantic<TS, TR>(f).AsDiSemantic();
+}
+
+static class IntLangExtension
+{
+    public static IIntLangSemantic<TS, TR> Prj<TS, TR>(this ISemantic1<IntLang, TS, TR> s)
+            => (IIntLangSemantic<TS, TR>)s;
+}
+
+public interface IIntLangSemantic<in TS, out TR> : ISemantic1<IntLang, TS, TR>
+{
+    TR LitI(int value);
+    TR Add(TS a, TS b);
+}
+
+sealed class LitI<T>(int Value) : IS<IntLang, T>
+{
+    public TR Evaluate<TR>(ISemantic1<IntLang, T, TR> semantic)
+        => semantic.Prj().LitI(Value);
+}
+
+sealed class Add<T>(T A, T B) : IS<IntLang, T>
+{
+    public TR Evaluate<TR>(ISemantic1<IntLang, T, TR> semantic)
+        => semantic.Prj().Add(A, B);
+}
+
+sealed class IntLangIdSemantic<T>() : IIntLangSemantic<T, IS<IntLang, T>>
+{
+    public IS<IntLang, T> Add(T a, T b)
+        => IntLang.Add(a, b);
+
+    public IS<IntLang, T> LitI(int value)
+        => IntLang.LitI<T>(value);
+}
+
+sealed class IntLangMapSemantic<TS, TR>(Func<TS, TR> F)
+    : IIntLangSemantic<TS, IS<IntLang, TR>>
+{
+    public IS<IntLang, TR> Add(TS a, TS b)
+        => IntLang.Add(F(a), F(b));
+
+    public IS<IntLang, TR> LitI(int value)
+        => IntLang.LitI<TR>(value);
+}

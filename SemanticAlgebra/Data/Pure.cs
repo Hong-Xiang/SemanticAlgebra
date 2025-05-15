@@ -3,8 +3,13 @@
 public interface IPure<TF> : IKind1<TF>
     where TF : IPure<TF>
 {
-    virtual static IS<TF, T> Pure<T>(T value)
-        => TF.PureCoSemantic<T>()
-             .CoEvaluate<ISemantic1<TF, T, IS<TF, T>>, IS<TF, T>>(value, TF.IdSemantic<T>());
-    abstract static ICoSemantic1<TF, T, T> PureCoSemantic<T>();
+    abstract static ICoSemantic1<TF, T, T> Pure<T>();
+}
+
+public static partial class PureK<TF>
+    where TF : IPure<TF>
+{
+    public static IS<TF, T> Pure<T>(T value)
+        => TF.Pure<T>()
+             .CoEvaluate(value, TF.Id<T>().Semantic);
 }

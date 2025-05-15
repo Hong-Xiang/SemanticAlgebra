@@ -9,7 +9,7 @@ public interface IKind1<TF>
     virtual static ICoSemantic1<TF, TS, TR> CoSemantic<TS, TR>(Func<TS, IS<TF, TR>> f)
         => new FuncCoSemantic<TF, TS, TR>(f);
 
-    virtual static IDiSemantic<TF, TS, TR> DiSemantic<TS, TR, TFS, TFR>(Func<IS<TF, TS>, IS<TF, TR>> f)
+    virtual static IDiSemantic<TF, TS, TR> DiSemantic<TS, TR>(Func<IS<TF, TS>, IS<TF, TR>> f)
         => new FuncDiSemantic<TF, TS, TR>(f);
 
     virtual static IDiSemantic<TF, TS, TR> Compose<TS, TM, TR>(
@@ -19,17 +19,37 @@ public interface IKind1<TF>
     virtual static Func<TS, TR> Compose<TS, TM, TR>(
         ICoSemantic1<TF, TS, TM> f,
         ISemantic1<TF, TM, TR> g
-    ) => s => f.CoEvaluate<ISemantic1<TF, TM, TR>, TR>(s, g);
-    virtual static Func<TS, IS<TF, TR>> ToFunc<TS, TR>(ICoSemantic1<TF, TS, TR> coSemantic)
-        => s => coSemantic.CoEvaluate<ISemantic1<TF, TR, IS<TF, TR>>, IS<TF, TR>>(s, TF.IdSemantic<TR>());
-    virtual static Func<IS<TF, TS>, TR> ToFunc<TS, TR>(ISemantic1<TF, TS, TR> semantic)
-        => fs => fs.Evaluate<ISemantic1<TF, TS, TR>, TR>(semantic);
+    ) => s => f.CoEvaluate(s, g);
 
+    virtual static IDiSemantic<TF, TS, TR> ComposeF<TS, TM, TR>(
+        ICoSemantic1<TF, IS<TF, TS>, TM> f,
+        ISemantic1<TF, TM, IS<TF, TR>> g
+    ) => TF.DiSemantic<TS, TR>(fs => f.CoEvaluate(fs, g));
+
+    virtual static Func<TS, IS<TF, TR>> ToFunc<TS, TR>(ICoSemantic1<TF, TS, TR> coSemantic)
+        => s => coSemantic.CoEvaluate(s, TF.Id<TR>().Semantic);
+    virtual static Func<IS<TF, TS>, TR> ToFunc<TS, TR>(ISemantic1<TF, TS, TR> semantic)
+        => fs => fs.Evaluate(semantic);
     virtual static Func<IS<TF, TS>, IS<TF, TR>> ToFunc<TS, TR>(IDiSemantic<TF, TS, TR> semantic)
         => TF.ToFunc(semantic.Semantic);
 
-    virtual static ISemantic1<TF, T, IS<TF, T>> IdSemantic<T>()
-        => TF.Semantic<T, IS<TF, T>>(static x => x);
+    virtual static IDiSemantic<TF, T, T> Id<T>()
+        => TF.DiSemantic<T, T>(static x => x);
+}
+
+public static class Kind1K<TF>
+    where TF : IKind1<TF>
+
+{
+    public static IDiSemantic<TF, T, T> Id<T>() => TF.Id<T>();
+}
+
+sealed record class DiSemanticFromSemantic<TF, TS, TR>(ISemantic1<TF, TS, IS<TF, TR>> Semantic)
+    : IDiSemantic<TF, TS, TR>
+    where TF : IKind1<TF>
+{
+    public TO CoEvaluate<TO>(IS<TF, TS> x, ISemantic1<TF, TR, TO> semantic)
+        => x.Evaluate(Semantic).Evaluate(semantic);
 }
 
 public interface IKind2<TF> where TF : IKind2<TF>

@@ -13,6 +13,5 @@ namespace SemanticAlgebra;
 // thus IS<f, T> ~  f t, with out explict 
 public interface IS<out TF, out T> where TF : IKind1<TF>
 {
-    TR Evaluate<TSemantic, TR>(TSemantic semantic) 
-        where TSemantic : ISemantic1<TF, T, TR>;
+    TR Evaluate<TR>(ISemantic1<TF, T, TR> semantic);
 }
