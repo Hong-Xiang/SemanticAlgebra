@@ -9,5 +9,5 @@ namespace SemanticAlgebra.Control;
 public interface ICoMonad<TF> : IExtend<TF>
     where TF : ICoMonad<TF>
 {
-    abstract static ISemantic1<TF, T, T> Extract<T>();
+    static abstract ISemantic1<TF, T, T> Extract<T>();
 }

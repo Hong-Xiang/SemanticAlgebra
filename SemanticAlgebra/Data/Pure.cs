@@ -3,7 +3,7 @@
 public interface IPure<TF> : IKind1<TF>
     where TF : IPure<TF>
 {
-    abstract static ICoSemantic1<TF, T, T> Pure<T>();
+    static abstract ICoSemantic1<TF, T, T> Pure<T>();
 }
 
 public static partial class PureK<TF>

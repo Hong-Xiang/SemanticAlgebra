@@ -9,6 +9,16 @@ public sealed record class Fix<F>(IS<F, Fix<F>> Unfix)
     public T Fold<W, T>(Folder<F, W, T> folder)
         where W : ICoMonad<W>
         => folder.Fold(this);
+
+    public T Fold<T>(ISemantic1<F, T, T> folder)
+        => Fold(new Folder<F, Identity, T>(
+            new DistributeFunctorIdentity<F>(),
+            // folder.DiMap<F, IS<Identity, T>, T, T, T>(Identity.Unwrap, Prelude.Id)
+            folder.CoMap<F, IS<Identity, T>, T, T>(Identity.Unwrap)
+        ));
+
+    public static ISemantic1<F, Fix<F>, Fix<F>> SyntaxFactory =>
+        F.Id<Fix<F>>().Semantic.ComposeF(e => e.Fix());
 }
 
 public static class FixExtension
@@ -25,28 +35,12 @@ public sealed record class Folder<F, W, T>(
     where F : IFunctor<F>
     where W : ICoMonad<W>
 {
-    public T Fold(Fix<F> e)
+    public T Fold(Fix<F> e) => Step(e).Evaluate(W.Extract<T>());
+
+    private IS<W, T> Step(Fix<F> value)
     {
-        return Step(e).Evaluate(W.Extract<T>());
-        //return m.Evaluate(Semantic);
-
-    }
-
-    IS<W, T> Step(Fix<F> value)
-    {
-
-        var wnested = value.Unfix.Select(fx => Step(fx).Evaluate(W.Duplicate<T>()));
-        var swap = wnested.Evaluate(Distribute.Distribute<IS<W, T>>());
-        var folded = swap.Select(fwt => fwt.Evaluate(Semantic));
-        return folded;
-
-        //IDiSemantic<F, Fix<F>, IS<W, IS<W, T>>> mapS =
-        //    F.Map<Fix<F>, IS<W, IS<W, T>>>(fx =>
-        //    {
-        //        var r = fx.Unfix.Select(Step);
-        //        return r;
-        //    });
-        //IS<F, IS<W, IS<W, T>>> v = value.Unfix.Evaluate(mapS.Semantic);
-        //return v.Evaluate(Distribute.Distribute<IS<W, T>>());
+        var nested = value.Unfix.Select(fx => Step(fx).Evaluate(W.Duplicate<T>()));
+        var swap = nested.Evaluate(Distribute.Distribute<IS<W, T>>());
+        return swap.Select(fwt => fwt.Evaluate(Semantic));
     }
 }

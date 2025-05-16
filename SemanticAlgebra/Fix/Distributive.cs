@@ -12,3 +12,11 @@ public interface IDistributive<F, G>
 public static class DistributiveExtension
 {
 }
+
+public sealed class DistributeFunctorIdentity<F> : IDistributive<F, Identity>
+    where F : IFunctor<F>
+{
+    public ISemantic1<F, IS<Identity, T>, IS<Identity, IS<F, T>>> Distribute<T>()
+        => Kind1K<F>.Semantic<IS<Identity, T>, IS<Identity, IS<F, T>>>(fit =>
+            Identity.Wrap(fit.Select(Identity.Unwrap)));
+}

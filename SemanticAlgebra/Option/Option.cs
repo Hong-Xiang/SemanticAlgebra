@@ -9,8 +9,6 @@ public sealed class Option
     public static IS<Option, T> None<T>() => new None<T>();
     public static IS<Option, T> Some<T>(T value) => new Some<T>(value);
 
-    public static IDiSemantic<Option, TS, TR> Map<TS, TR>(Func<TS, TR> f)
-        => new OptionMapSemantic<TS, TR>(f).AsDiSemantic();
 
     public static ISemantic1<Option, Func<TS, TR>, IDiSemantic<Option, TS, TR>> Apply<TS, TR>()
         => new OptionApplySemantic<TS, TR>();
@@ -21,8 +19,15 @@ public sealed class Option
     public static ISemantic1<Option, IS<Option, T>, IS<Option, T>> Join<T>()
         => new OptionJoinSemantic<T>();
 
+
     public static IDiSemantic<Option, T, T> Id<T>()
         => new OptionIdSemantic<T>().AsDiSemantic();
+
+    public static IDiSemantic<Option, TS, TR> Map<TS, TR>(Func<TS, TR> f)
+        => new OptionMapSemantic<TS, TR>(f).AsDiSemantic();
+
+    public static ISemantic1<Option, TS, TR> ComposeF<TS, TI, TR>(ISemantic1<Option, TS, TI> s, Func<TI, TR> f)
+        => new OptionComposeFSemantic<TS, TI, TR>(s.Prj(), f);
 }
 
 public interface IOptionSemantic<in TS, out TR>
@@ -39,8 +44,6 @@ public static class OptionExtension
     ) => (IOptionSemantic<TS, TR>)semantic;
 }
 
-
-
 public sealed record class None<T>() : IS<Option, T>
 {
     public TR Evaluate<TR>(ISemantic1<Option, T, TR> semantic)
@@ -53,23 +56,52 @@ public sealed record class Some<T>(T Value) : IS<Option, T>
         => semantic.Prj().Some(Value);
 }
 
+sealed record class OptionSemantic<TS, TR>(Func<IS<Option, TS>, TR> F)
+    : IOptionSemantic<TS, TR>
+{
+    public TR None()
+    {
+        throw new NotImplementedException();
+    }
+
+    public TR Some(TS value)
+    {
+        throw new NotImplementedException();
+    }
+}
+
 sealed class OptionIdSemantic<T>() : IOptionSemantic<T, IS<Option, T>>
 {
     public IS<Option, T> None() => Option.None<T>();
     public IS<Option, T> Some(T value) => Option.Some(value);
 }
 
-sealed class OptionMapSemantic<TS, TR>(Func<TS, TR> F) : IOptionSemantic<TS, IS<Option, TR>>
+sealed class OptionMapSemantic<TS, TR>(
+    Func<TS, TR> f) : IOptionSemantic<TS, IS<Option, TR>>
 {
-    public IS<Option, TR> None() => Option.None<TR>();
+    public IS<Option, TR> None()
+        => Option.None<TR>();
 
-    public IS<Option, TR> Some(TS value) => Option.Some(F(value));
+    public IS<Option, TR> Some(TS value)
+        => Option.Some(f(value));
+}
+
+sealed class OptionComposeFSemantic<TS, TI, TR>(
+    IOptionSemantic<TS, TI> s,
+    Func<TI, TR> f
+)
+    : IOptionSemantic<TS, TR>
+{
+    public TR None() => f(s.None());
+
+
+    public TR Some(TS value) => f(s.Some(value));
 }
 
 sealed class OptionPureCoSemantic<T>() : ICoSemantic1<Option, T, T>
 {
-    public TR CoEvaluate<TR>(T x, ISemantic1<Option, T, TR> semantic)
-        => semantic.Prj().Some(x);
+    public TR CoEvaluate<TR>(T x, ISemantic1<Option, T, TR> s)
+        => s.Prj().Some(x);
 }
 
 sealed class OptionApplySemantic<TS, TR>()
@@ -77,11 +109,12 @@ sealed class OptionApplySemantic<TS, TR>()
 {
     public IDiSemantic<Option, TS, TR> None()
         => Kind1K<Option>.Id<TS>()
-            .Semantic
-            .MapR(static _ => Option.None<TR>()).AsDiSemantic();
+                         .Semantic
+                         .ComposeF(static _ => Option.None<TR>())
+                         .AsDiSemantic();
 
     public IDiSemantic<Option, TS, TR> Some(Func<TS, TR> value)
-        => DiSemantic.FromFunc<Option, TS, TR>(fs => fs.Select(value));
+        => Kind1K<Option>.DiSemantic<TS, TR>(fs => fs.Select(value));
 }
 
 sealed class OptionJoinSemantic<T>() : IOptionSemantic<IS<Option, T>, IS<Option, T>>
