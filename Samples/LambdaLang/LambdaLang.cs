@@ -6,13 +6,13 @@ namespace LambdaLang;
 
 sealed class Lambda<V> : IFunctor<Lambda<V>>
 {
-    public static IDiSemantic<Lambda<V>, T, T> Id<T>()
-        => new LambdaIdSemantic<V, T>().AsDiSemantic();
+    public static ISemantic1<Lambda<V>, T, IS<Lambda<V>, T>> Id<T>()
+        => new LambdaIdSemantic<V, T>();
 
-    public static ISemantic1<Lambda<V>, TS, TR> ComposeF<TS, TI, TR>(ISemantic1<Lambda<V>, TS, TI> s, Func<TI, TR> f)
+    public static ISemantic1<Lambda<V>, TS, TR> Compose<TS, TI, TR>(ISemantic1<Lambda<V>, TS, TI> s, Func<TI, TR> f)
         => new LambdaComposeFSemantic<V, TS, TI, TR>(s.Prj(), f);
 
-    public static IDiSemantic<Lambda<V>, TS, TR> Map<TS, TR>(Func<TS, TR> f)
+    public static ISemantic1<Lambda<V>, TS, IS<Lambda<V>, TR>> MapS<TS, TR>(Func<TS, TR> f)
     {
         throw new NotImplementedException();
     }
@@ -29,31 +29,6 @@ interface ILambdaLang<TV, in TEI, out TEO>
 interface ILambdaPSemantic<in TI, out TO>
 {
     TO Get(ITerm<TI> termV);
-}
-
-sealed class LambdaP : IFunctor<LambdaP>
-{
-    public static IDiSemantic<LambdaP, T, T> Id<T>()
-    {
-        throw new NotImplementedException();
-    }
-
-    public static ISemantic1<LambdaP, TS, TR> ComposeF<TS, TI, TR>(ISemantic1<LambdaP, TS, TI> s, Func<TI, TR> f)
-    {
-        throw new NotImplementedException();
-    }
-
-    public static IDiSemantic<LambdaP, TS, TR> Map<TS, TR>(Func<TS, TR> f)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-static class LambdaPExtension
-{
-    public static ILambdaPSemantic<TI, TO> Prj<TI, TO>(
-        this ISemantic1<LambdaP, TI, TO> s
-    ) => (ILambdaPSemantic<TI, TO>)s;
 }
 
 interface ITerm<out T>

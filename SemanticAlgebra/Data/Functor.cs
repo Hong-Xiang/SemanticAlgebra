@@ -9,7 +9,8 @@ namespace SemanticAlgebra.Data;
 public interface IFunctor<TF> : IKind1<TF>
     where TF : IFunctor<TF>
 {
-    static abstract IDiSemantic<TF, TS, TR> Map<TS, TR>(Func<TS, TR> f);
+    // (s -> r) -> (f s -> f r)
+    static abstract ISemantic1<TF, TS, IS<TF, TR>> MapS<TS, TR>(Func<TS, TR> f);
 }
 
 public static class FunctorExtension
@@ -20,13 +21,13 @@ public static class FunctorExtension
         Func<TO, TR> g
     )
         where TF : IFunctor<TF> =>
-        TF.Map(f).ComposeSToS(s.ComposeF(g));
+            TF.Semantic<TS, TR>(fs => g(fs.Evaluate(TF.MapS(f)).Evaluate(s)));
 
-    public static ICoSemantic1<TF, TS, TR> DiMap<TF, TS, TI, TO, TR>(
-        ICoSemantic1<TF, TI, TO> c,
-        Func<TS, TI> f,
-        Func<TO, TR> g
-    )
-        where TF : IFunctor<TF>
-        => TF.CoSemantic<TS, TR>(s => c.CoEvaluate(f(s), TF.Semantic<TO, IS<TF, TR>>(fs => fs.Select(g))));
+    //public static ICoSemantic1<TF, TS, TR> DiMap<TF, TS, TI, TO, TR>(
+    //    ICoSemantic1<TF, TI, TO> c,
+    //    Func<TS, TI> f,
+    //    Func<TO, TR> g
+    //)
+    //    where TF : IFunctor<TF>
+    //    => TF.CoSemantic<TS, TR>(s => c.CoEvaluate(f(s), TF.Semantic<TO, IS<TF, TR>>(fs => fs.Select(g))));
 }

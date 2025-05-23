@@ -6,8 +6,7 @@ using System.Threading.Tasks;
 
 namespace SemanticAlgebra.Control;
 
-public interface ICoMonad<TF> : IExtend<TF>
-    where TF : ICoMonad<TF>
+public interface IComonad<TF> : IExtend<TF>, IExtract<TF>
+    where TF : IComonad<TF>
 {
-    static abstract ISemantic1<TF, T, T> Extract<T>();
 }

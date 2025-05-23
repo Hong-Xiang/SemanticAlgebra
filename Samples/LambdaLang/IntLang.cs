@@ -10,14 +10,14 @@ public sealed class IntLang : IFunctor<IntLang>
     public static IS<IntLang, T> Add<T>(T a, T b) => new Add<T>(a, b);
 
 
-    public static IDiSemantic<IntLang, T, T> Id<T>()
-        => new IntLangIdSemantic<T>().AsDiSemantic();
+    public static ISemantic1<IntLang, T, IS<IntLang, T>> Id<T>()
+        => new IntLangIdSemantic<T>();
+    public static ISemantic1<IntLang, TS, TR> Compose<TS, TI, TR>(ISemantic1<IntLang, TS, TI> s, Func<TI, TR> f)
+        => new IntLangComposeSemantic<TS, TI, TR>(s.Prj(), f);
 
-    public static IDiSemantic<IntLang, TS, TR> Map<TS, TR>(Func<TS, TR> f)
-        => new IntLangMapSemantic<TS, TR>(f).AsDiSemantic();
+    public static ISemantic1<IntLang, TS, IS<IntLang, TR>> MapS<TS, TR>(Func<TS, TR> f)
+        => new IntLangMapSemantic<TS, TR>(f);
 
-    public static ISemantic1<IntLang, TS, TR> ComposeF<TS, TI, TR>(ISemantic1<IntLang, TS, TI> s, Func<TI, TR> f)
-        => new IntLangComposeF<TS, TI, TR>(s.Prj(), f);
 
     public static IIntLangSemantic<Fix<IntLang>, Fix<IntLang>> SyntaxFactory => Fix<IntLang>.SyntaxFactory.Prj();
 }
@@ -55,7 +55,7 @@ sealed class IntLangIdSemantic<T> : IIntLangSemantic<T, IS<IntLang, T>>
         => IntLang.LitI<T>(value);
 }
 
-sealed class IntLangComposeF<TS, TI, TR>(
+sealed class IntLangComposeSemantic<TS, TI, TR>(
     IIntLangSemantic<TS, TI> s,
     Func<TI, TR> f
 ) : IIntLangSemantic<TS, TR>

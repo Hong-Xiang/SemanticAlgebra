@@ -3,30 +3,35 @@ using SemanticAlgebra.Data;
 
 namespace SemanticAlgebra.Free;
 
-public abstract class Free<F> : IMonad<Free<F>> 
+public abstract class Free<F> : IMonad<Free<F>>
     where F : IFunctor<F>
 {
-    public static IDiSemantic<Free<F>, T, T> Id<T>()
+    public static ISemantic1<Free<F>, Func<TS, TR>, ISemantic1<Free<F>, TS, IS<Free<F>, TR>>> ApplyS<TS, TR>()
     {
         throw new NotImplementedException();
     }
 
-    public static ISemantic1<Free<F>, TS, TR> ComposeF<TS, TI, TR>(ISemantic1<Free<F>, TS, TI> s, Func<TI, TR> f)
+    public static ISemantic1<Free<F>, TS, TR> Compose<TS, TI, TR>(ISemantic1<Free<F>, TS, TI> s, Func<TI, TR> f)
     {
         throw new NotImplementedException();
     }
 
-    public static IDiSemantic<Free<F>, TS, TR> Map<TS, TR>(Func<TS, TR> f)
+    public static ISemantic1<Free<F>, T, IS<Free<F>, T>> Id<T>()
     {
         throw new NotImplementedException();
     }
 
-    public static ISemantic1<Free<F>, Func<TS, TR>, IDiSemantic<Free<F>, TS, TR>> Apply<TS, TR>()
+    public static ISemantic1<Free<F>, IS<Free<F>, T>, IS<Free<F>, T>> JoinS<T>()
     {
         throw new NotImplementedException();
     }
 
-    public static ICoSemantic1<Free<F>, T, T> Pure<T>()
+    public static ISemantic1<Free<F>, TS, IS<Free<F>, TR>> MapS<TS, TR>(Func<TS, TR> f)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static IS<Free<F>, T> Pure<T>(T x)
     {
         throw new NotImplementedException();
     }

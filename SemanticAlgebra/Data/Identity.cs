@@ -4,33 +4,35 @@ namespace SemanticAlgebra.Data;
 
 public abstract class Identity
     : IMonad<Identity>
-    , ICoMonad<Identity>
+    , IComonad<Identity>
 
 {
-    public static IDiSemantic<Identity, T, T> Id<T>()
-        => new IdentityIdSemantic<T>().AsDiSemantic();
-
-    public static IDiSemantic<Identity, TS, TR> Map<TS, TR>(Func<TS, TR> f)
-        => new IdentityMapSemantic<TS, TR>(f).AsDiSemantic();
-
-    public static ISemantic1<Identity, TS, TR> ComposeF<TS, TI, TR>(ISemantic1<Identity, TS, TI> s, Func<TI, TR> f)
-        => new IdentityComposeFSemantic<TS, TI, TR>(s.Prj(), f);
-
     public static IS<Identity, T> Wrap<T>(T value) => new Id<T>(value);
 
-    public static T Unwrap<T>(IS<Identity, T> value) => value.Evaluate(Extract<T>());
+    public static ISemantic1<Identity, T, IS<Identity, T>> Id<T>()
+        => new IdentityIdSemantic<T>();
+    public static ISemantic1<Identity, TS, TR> Compose<TS, TI, TR>(ISemantic1<Identity, TS, TI> s, Func<TI, TR> f)
+        => new IdentityComposeFSemantic<TS, TI, TR>(s.Prj(), f);
 
-    public static ISemantic1<Identity, Func<TS, TR>, IDiSemantic<Identity, TS, TR>> Apply<TS, TR>()
+    public static ISemantic1<Identity, TS, IS<Identity, TR>> MapS<TS, TR>(Func<TS, TR> f)
+        => new IdentityMapSemantic<TS, TR>(f);
+
+
+    public static T Unwrap<T>(IS<Identity, T> value) => value.Evaluate(ExtractS<T>());
+
+    public static ISemantic1<Identity, Func<TS, TR>, ISemantic1<Identity, TS, IS<Identity, TR>>> ApplyS<TS, TR>()
         => new IdentityApplySemantic<TS, TR>();
 
-    public static ICoSemantic1<Identity, T, T> Pure<T>()
-        => new IdentityPureCoSemantic<T>();
+    public static IS<Identity, T> Pure<T>(T value) => new Id<T>(value);
 
-    public static IDiSemantic<Identity, TS, TR> Extend<TS, TR>(ISemantic1<Identity, TS, TR> s)
-        => new IdentityExtendSemantic<TS, TR>(s).AsDiSemantic();
+    public static ISemantic1<Identity, TS, IS<Identity, TR>> ExtendS<TS, TR>(ISemantic1<Identity, TS, TR> s)
+        => new IdentityExtendSemantic<TS, TR>(s);
 
-    public static ISemantic1<Identity, T, T> Extract<T>()
+    public static ISemantic1<Identity, T, T> ExtractS<T>()
         => new IdentityExtractSemantic<T>();
+
+    public static ISemantic1<Identity, IS<Identity, T>, IS<Identity, T>> JoinS<T>()
+        => Kind1K<Identity>.Semantic<IS<Identity, T>, IS<Identity, T>>(ffs => ffs.Extract());
 }
 
 static class IdentityExtension
@@ -71,16 +73,10 @@ sealed class IdentityComposeFSemantic<TS, TI, TR>(
     public TR Unwrap(TS value) => f(semantic.Unwrap(value));
 }
 
-sealed class IdentityPureCoSemantic<T> : ICoSemantic1<Identity, T, T>
+sealed class IdentityApplySemantic<TS, TR> : IIdentitySemantic<Func<TS, TR>, ISemantic1<Identity, TS, IS<Identity, TR>>>
 {
-    public TO CoEvaluate<TO>(T x, ISemantic1<Identity, T, TO> s)
-        => s.Prj().Unwrap(x);
-}
-
-sealed class IdentityApplySemantic<TS, TR> : IIdentitySemantic<Func<TS, TR>, IDiSemantic<Identity, TS, TR>>
-{
-    public IDiSemantic<Identity, TS, TR> Unwrap(Func<TS, TR> value)
-        => Kind1K<Identity>.DiSemantic<TS, TR>(fs => fs.Select(value));
+    public ISemantic1<Identity, TS, IS<Identity, TR>> Unwrap(Func<TS, TR> value)
+        => Kind1K<Identity>.Semantic<TS, IS<Identity, TR>>(fs => fs.Select(value));
 }
 
 sealed class IdentityExtractSemantic<T> : IIdentitySemantic<T, T>
