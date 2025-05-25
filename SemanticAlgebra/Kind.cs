@@ -27,6 +27,10 @@ public static class Kind1K<TF>
 {
     public static ISemantic1<TF, T, IS<TF, T>> Id<T>() => TF.Id<T>();
     public static ISemantic1<TF, TS, TR> Semantic<TS, TR>(Func<IS<TF, TS>, TR> f) => TF.Semantic(f);
+    public static ISemantic1<TF, TS, TR> Compose<TS, TI, TR>(
+            ISemantic1<TF, TS, TI> s,
+            Func<TI, TR> f) => TF.Compose(s, f);
+
 
     //public static ICoSemantic1<TF, TS, TR> CoSemantic<TS, TR>(Func<TS, IS<TF, TR>> f) => TF.CoSemantic(f);
     //public static IDiSemantic<TF, TS, TR> DiSemantic<TS, TR>(Func<IS<TF, TS>, IS<TF, TR>> f) => TF.DiSemantic(f);

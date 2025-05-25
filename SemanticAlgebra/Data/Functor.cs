@@ -13,6 +13,13 @@ public interface IFunctor<TF> : IKind1<TF>
     static abstract ISemantic1<TF, TS, IS<TF, TR>> MapS<TS, TR>(Func<TS, TR> f);
 }
 
+public static class FunctorK<TF>
+    where TF : IFunctor<TF>
+{
+    public static ISemantic1<TF, TS, IS<TF, TR>> MapS<TS, TR>(Func<TS, TR> f)
+        => TF.MapS(f);
+}
+
 public static class FunctorExtension
 {
     public static ISemantic1<TF, TS, TR> DiMap<TF, TS, TI, TO, TR>(

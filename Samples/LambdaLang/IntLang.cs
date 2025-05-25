@@ -4,6 +4,7 @@ using SemanticAlgebra.Fix;
 
 namespace LambdaLang;
 
+
 public sealed class IntLang : IFunctor<IntLang>
 {
     public static IS<IntLang, T> LitI<T>(int value) => new LitI<T>(value);

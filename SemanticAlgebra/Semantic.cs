@@ -12,8 +12,12 @@ namespace SemanticAlgebra;
 // Thus we need to check it manually
 // Semantic could be viewd as a generalization of object algebra,
 // which could be considered as a generalization of visitor pattern.
-public interface ISemantic1<in TF, in TS, out TR>
+public interface ISemantic1<out TF, in TS, out TR>
     where TF : IKind1<TF>
 {
 }
 
+// forall r. semantic<f, s, r> -> r ~ f s
+// f (g a)
+// ~ forall r1. sem<f, g a, r1>
+// ~ forall r1. sem<f, forall r2. sem<g, a, r2>, r1>
