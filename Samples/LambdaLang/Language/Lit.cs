@@ -52,8 +52,15 @@ sealed class LitIdSemantic<T>() : ILitSemantic<T, IS<Lit, T>>
         => Lit.LitI<T>(value);
 }
 
-sealed class LitMapSemantic<TS, TR>(Func<TS, TR> F) : ILitSemantic<TS, IS<Lit, TR>>
+sealed class LitMapSemantic<TS, TR> : ILitSemantic<TS, IS<Lit, TR>>
 {
+    private readonly Func<TS, TR> f;
+
+    public LitMapSemantic(Func<TS, TR> f)
+    {
+        this.f = f;
+    }
+
     public IS<Lit, TR> LitI(int value)
         => Lit.LitI<TR>(value);
 }

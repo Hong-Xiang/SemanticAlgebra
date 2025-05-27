@@ -51,7 +51,6 @@ public class LambdaLangTests
         var S = Fix<Sig>.SyntaxFactory.Prj();
 
         var x = new Identifier("x");
-        var v = new Identifier("v");
         var add1 = S.Lambda(x, S.Add(S.LitI(1), S.Var(x)));
 
         var f = new Identifier("f");
