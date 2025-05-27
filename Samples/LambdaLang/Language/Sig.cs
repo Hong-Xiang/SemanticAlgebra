@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace LambdaLang.Language;
 
-public interface Sig
+interface Sig
     : IFunctor<Sig>
     , Lit, Arith, Lam, App, Bind
 {
@@ -47,7 +47,7 @@ public interface Sig
 
 }
 
-public interface ISigSemantic<in TI, out TO>
+interface ISigSemantic<in TI, out TO>
     : ISemantic1<Sig, TI, TO>
     , ILitSemantic<TI, TO>
     , IArithSemantic<TI, TO>
@@ -57,13 +57,13 @@ public interface ISigSemantic<in TI, out TO>
 {
 }
 
-public static class SigExtension
+static class SigExtension
 {
     public static ISigSemantic<TS, TR> Prj<TS, TR>(this ISemantic1<Sig, TS, TR> s)
         => (ISigSemantic<TS, TR>)s;
 }
 
-public sealed class SigSemantic<TS, TR>(
+sealed class SigSemantic<TS, TR>(
     ILitSemantic<TS, TR> Lit,
     IArithSemantic<TS, TR> Arith,
     ILamSemantic<TS, TR> Lam,
@@ -90,10 +90,10 @@ public sealed class SigSemantic<TS, TR>(
         => Bind.Let(name, expr, body);
 }
 
-public interface ISigValue
+interface ISigValue
 {
 }
-public sealed record SigInt(int Value) : ISigValue
+sealed record class SigInt(int Value) : ISigValue
 {
 }
-public sealed record SigLam(Func<ISigValue, ISigValue> F) : ISigValue { }
+sealed record class SigLam(Func<ISigValue, ISigValue> F) : ISigValue { }

@@ -8,7 +8,7 @@ using SemanticAlgebra;
 
 namespace LambdaLang.Language;
 
-public interface Arith : IFunctor<Arith>
+interface Arith : IFunctor<Arith>
 {
     public static IS<Arith, T> Add<T>(T left, T right) => new Add<T>(left, right);
     public static IS<Arith, T> Mul<T>(T left, T right) => new Mul<T>(left, right);
@@ -23,7 +23,7 @@ public interface Arith : IFunctor<Arith>
         => new ArithMapSemantic<TS, TR>(f);
 }
 
-public interface IArithSemantic<in TS, out TR> : ISemantic1<Arith, TS, TR>
+interface IArithSemantic<in TS, out TR> : ISemantic1<Arith, TS, TR>
 {
     TR Add(TS l, TS r);
     TR Mul(TS l, TS r);
@@ -49,7 +49,7 @@ sealed record class Mul<T>(T Left, T Right)
         => semantic.Prj().Mul(Left, Right);
 }
 
-public sealed class ArithComposeSemantic<TS, TI, TR>(IArithSemantic<TS, TI> S, Func<TI, TR> F) : IArithSemantic<TS, TR>
+sealed class ArithComposeSemantic<TS, TI, TR>(IArithSemantic<TS, TI> S, Func<TI, TR> F) : IArithSemantic<TS, TR>
 {
     public TR Add(TS l, TS r)
         => F(S.Add(l, r));
@@ -58,7 +58,7 @@ public sealed class ArithComposeSemantic<TS, TI, TR>(IArithSemantic<TS, TI> S, F
         => F(S.Mul(l, r));
 }
 
-public sealed class ArithIdSemantic<T>() : IArithSemantic<T, IS<Arith, T>>
+sealed class ArithIdSemantic<T>() : IArithSemantic<T, IS<Arith, T>>
 {
     public IS<Arith, T> Add(T l, T r)
         => Arith.Add(l, r);
@@ -67,7 +67,7 @@ public sealed class ArithIdSemantic<T>() : IArithSemantic<T, IS<Arith, T>>
         => Arith.Mul(l, r);
 }
 
-public sealed class ArithMapSemantic<TS, TR>(Func<TS, TR> F) : IArithSemantic<TS, IS<Arith, TR>>
+sealed class ArithMapSemantic<TS, TR>(Func<TS, TR> F) : IArithSemantic<TS, IS<Arith, TR>>
 {
     public IS<Arith, TR> Add(TS l, TS r)
         => Arith.Add(F(l), F(r));
@@ -76,7 +76,7 @@ public sealed class ArithMapSemantic<TS, TR>(Func<TS, TR> F) : IArithSemantic<TS
         => Arith.Mul(F(l), F(r));
 }
 
-public sealed class ArithShowFolder : IArithSemantic<string, string>
+sealed class ArithShowFolder : IArithSemantic<string, string>
 {
     string IArithSemantic<string, string>.Add(string l, string r)
         => $"({l} + {r})";
@@ -85,7 +85,7 @@ public sealed class ArithShowFolder : IArithSemantic<string, string>
         => $"({l} * {r})";
 }
 
-public sealed class ArithEvalFolder : IArithSemantic<SigEvalData, SigEvalData>
+sealed class ArithEvalFolder : IArithSemantic<SigEvalData, SigEvalData>
 {
     public SigEvalData Add(SigEvalData l, SigEvalData r)
         => from l_ in l

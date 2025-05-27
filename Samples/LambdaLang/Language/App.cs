@@ -4,7 +4,7 @@ using System;
 
 namespace LambdaLang.Language;
 
-public interface App : IFunctor<App>
+interface App : IFunctor<App>
 {
     public static IS<App, T> Apply<T>(T f, T x) => new Apply<T>(f, x);
 
@@ -18,7 +18,7 @@ public interface App : IFunctor<App>
         => new AppMapSemantic<TS, TR>(f);
 }
 
-public interface IAppSemantic<in TS, out TR> : ISemantic1<App, TS, TR>
+interface IAppSemantic<in TS, out TR> : ISemantic1<App, TS, TR>
 {
     TR Apply(TS f, TS x);
 }
@@ -37,31 +37,31 @@ sealed record class Apply<T>(T F, T X)
         => semantic.Prj().Apply(F, X);
 }
 
-public sealed class AppComposeSemantic<TS, TI, TR>(IAppSemantic<TS, TI> S, Func<TI, TR> F) : IAppSemantic<TS, TR>
+sealed class AppComposeSemantic<TS, TI, TR>(IAppSemantic<TS, TI> S, Func<TI, TR> F) : IAppSemantic<TS, TR>
 {
     public TR Apply(TS f, TS x)
         => F(S.Apply(f, x));
 }
 
-public sealed class AppIdSemantic<T>() : IAppSemantic<T, IS<App, T>>
+sealed class AppIdSemantic<T>() : IAppSemantic<T, IS<App, T>>
 {
     public IS<App, T> Apply(T f, T x)
         => App.Apply(f, x);
 }
 
-public sealed class AppMapSemantic<TS, TR>(Func<TS, TR> F) : IAppSemantic<TS, IS<App, TR>>
+sealed class AppMapSemantic<TS, TR>(Func<TS, TR> F) : IAppSemantic<TS, IS<App, TR>>
 {
     public IS<App, TR> Apply(TS f, TS x)
         => App.Apply(F(f), F(x));
 }
 
-public sealed class AppShowFolder : IAppSemantic<string, string>
+sealed class AppShowFolder : IAppSemantic<string, string>
 {
     string IAppSemantic<string, string>.Apply(string f, string x)
         => $"{f}({x})";
 }
 
-public sealed class AppEvalFolder : IAppSemantic<SigEvalData, SigEvalData>
+sealed class AppEvalFolder : IAppSemantic<SigEvalData, SigEvalData>
 {
     public SigEvalData Apply(SigEvalData f, SigEvalData x)
     {

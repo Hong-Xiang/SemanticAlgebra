@@ -8,7 +8,7 @@ using SemanticAlgebra;
 
 namespace LambdaLang.Language;
 
-public interface Lit : IFunctor<Lit>
+interface Lit : IFunctor<Lit>
 {
     public static IS<Lit, T> LitI<T>(int value) => new LitI<T>(value);
 
@@ -22,7 +22,7 @@ public interface Lit : IFunctor<Lit>
         => new LitMapSemantic<TS, TR>(f);
 }
 
-public interface ILitSemantic<in TS, out TR> : ISemantic1<Lit, TS, TR>
+interface ILitSemantic<in TS, out TR> : ISemantic1<Lit, TS, TR>
 {
     TR LitI(int value);
 }
@@ -40,31 +40,31 @@ sealed record class LitI<T>(int Value)
         => semantic.Prj().LitI(Value);
 }
 
-public sealed class LitComposeSemantic<TS, TI, TR>(ILitSemantic<TS, TI> S, Func<TI, TR> F) : ILitSemantic<TS, TR>
+sealed class LitComposeSemantic<TS, TI, TR>(ILitSemantic<TS, TI> S, Func<TI, TR> F) : ILitSemantic<TS, TR>
 {
     public TR LitI(int value)
         => F(S.LitI(value));
 }
 
-public sealed class LitIdSemantic<T>() : ILitSemantic<T, IS<Lit, T>>
+sealed class LitIdSemantic<T>() : ILitSemantic<T, IS<Lit, T>>
 {
     public IS<Lit, T> LitI(int value)
         => Lit.LitI<T>(value);
 }
 
-public sealed class LitMapSemantic<TS, TR>(Func<TS, TR> F) : ILitSemantic<TS, IS<Lit, TR>>
+sealed class LitMapSemantic<TS, TR>(Func<TS, TR> F) : ILitSemantic<TS, IS<Lit, TR>>
 {
     public IS<Lit, TR> LitI(int value)
         => Lit.LitI<TR>(value);
 }
 
-public sealed class LitShowFolder : ILitSemantic<string, string>
+sealed class LitShowFolder : ILitSemantic<string, string>
 {
     string ILitSemantic<string, string>.LitI(int value)
         => $"{value}";
 }
 
-public sealed class LitEvalFolder : ILitSemantic<SigEvalData, SigEvalData>
+sealed class LitEvalFolder : ILitSemantic<SigEvalData, SigEvalData>
 {
     public SigEvalData LitI(int value)
         => SigEvalState.From(s => (s, new SigInt(value)));

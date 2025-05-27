@@ -1,4 +1,4 @@
-﻿using LambdaLang;
+using LambdaLang;
 using LambdaLang.Language;
 using SemanticAlgebra;
 using SemanticAlgebra.Data;
@@ -78,5 +78,3 @@ var vals = expr.Fold<SigEvalData>(Sig.SigSemantic(
     new BindEvalFolder()));
 var valr = vals.Run(ImmutableDictionary<Identifier, ISigValue>.Empty);
 Console.WriteLine(valr.Data);
-
-
