@@ -6,26 +6,6 @@ using SemanticAlgebra.Fix;
 using SemanticAlgebra.Option;
 using System.Collections.Immutable;
 
-
-// var s = Option.Some(40);
-// var e = s.Select(n => n + 2);
-// Console.WriteLine(e);
-// var t = Option.Some(2);
-// var z = s.ZipWith(t, (a, b) => a * b);
-// Console.WriteLine(z);
-// var x = from a in s
-//         from b in Option.Some(2)
-//         from c in Option.Some(3)
-//         select a + b + c;
-// Console.WriteLine(x);
-
-//var sf = IntLang.SyntaxFactory;
-//var fe = sf.LitI(40);
-//var fadd = sf.Add(fe, fe);
-
-//var fv = fadd.Fold(new IntFolder());
-//Console.WriteLine(fv);
-
 var S = Fix<Sig>.SyntaxFactory.Prj();
 
 var x = new Identifier("x");
@@ -35,9 +15,6 @@ var add1 = S.Lambda(x, S.Add(S.LitI(1), S.Var(x)));
 var f = new Identifier("f");
 var x2 = new Identifier("x");
 var z = S.Lambda(f, S.Lambda(x2, S.Var(x2)));
-
-
-
 
 var f2 = new Identifier("f");
 var n = new Identifier("n");
@@ -53,12 +30,7 @@ var c1 = S.Apply(succ, z);
 var c2 = S.Apply(succ, c1);
 var c3 = S.Apply(succ, c2);
 
-//var expr = S.Let(v, S.LitI(41), S.Apply(add1, S.Var(v)));
-//var expr = S.Apply(add1, S.LitI(41));
-
 var l41 = S.LitI(41);
-
-//var expr = S.Apply(S.Apply(z, add1), l41);
 var expr = S.Apply(S.Apply(c3, add1), l41);
 
 

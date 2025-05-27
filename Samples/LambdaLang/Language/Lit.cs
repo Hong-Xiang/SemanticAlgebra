@@ -19,7 +19,7 @@ interface Lit : IFunctor<Lit>
         => new LitIdSemantic<T>();
 
     static ISemantic1<Lit, TS, IS<Lit, TR>> IFunctor<Lit>.MapS<TS, TR>(Func<TS, TR> f)
-        => new LitMapSemantic<TS, TR>(f);
+        => new LitMapSemantic<TS, TR>();
 }
 
 interface ILitSemantic<in TS, out TR> : ISemantic1<Lit, TS, TR>
@@ -52,7 +52,7 @@ sealed class LitIdSemantic<T>() : ILitSemantic<T, IS<Lit, T>>
         => Lit.LitI<T>(value);
 }
 
-sealed class LitMapSemantic<TS, TR>(Func<TS, TR> F) : ILitSemantic<TS, IS<Lit, TR>>
+sealed class LitMapSemantic<TS, TR> : ILitSemantic<TS, IS<Lit, TR>>
 {
     public IS<Lit, TR> LitI(int value)
         => Lit.LitI<TR>(value);
