@@ -3,9 +3,10 @@ using SemanticAlgebra;
 using SemanticAlgebra.Data;
 using SemanticAlgebra.Fix;
 using System.Collections.Immutable;
-using LambdaLang.Language;
+using LambdaLang.Tests.LambdaLang.Language;
+using LambdaLang;
 
-namespace LambdaLang.Tests;
+namespace LambdaLang.Tests.LambdaLang;
 
 public class LambdaLangTests
 {
