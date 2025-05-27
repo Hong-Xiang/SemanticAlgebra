@@ -9,7 +9,7 @@ using System.Collections.Immutable;
 
 namespace LambdaLang.Language;
 
-interface Bind : IFunctor<Bind>
+public interface Bind : IFunctor<Bind>
 {
     public static IS<Bind, T> Let<T>(Identifier name, T expr, T body) => new Let<T>(name, expr, body);
 
@@ -23,18 +23,18 @@ interface Bind : IFunctor<Bind>
         => new BindMapSemantic<TS, TR>(f);
 }
 
-interface IBindSemantic<in TS, out TR> : ISemantic1<Bind, TS, TR>
+public interface IBindSemantic<in TS, out TR> : ISemantic1<Bind, TS, TR>
 {
     TR Let(Identifier name, TS expr, TS body);
 }
 
-sealed class BindShowFolder : IBindSemantic<string, string>
+public sealed class BindShowFolder : IBindSemantic<string, string>
 {
     string IBindSemantic<string, string>.Let(Identifier name, string expr, string body)
         => $"(let {name.Name} = {expr} in {body})";
 }
 
-sealed class BindEvalFolder : IBindSemantic<SigEvalData, SigEvalData>
+public sealed class BindEvalFolder : IBindSemantic<SigEvalData, SigEvalData>
 {
     public SigEvalData Let(Identifier name, SigEvalData expr, SigEvalData body)
         => SigEvalState.From(s =>
@@ -59,19 +59,19 @@ sealed record class Let<T>(Identifier Name, T Expr, T Body)
         => semantic.Prj().Let(Name, Expr, Body);
 }
 
-sealed class BindComposeSemantic<TS, TI, TR>(IBindSemantic<TS, TI> S, Func<TI, TR> F) : IBindSemantic<TS, TR>
+public sealed class BindComposeSemantic<TS, TI, TR>(IBindSemantic<TS, TI> S, Func<TI, TR> F) : IBindSemantic<TS, TR>
 {
     public TR Let(Identifier name, TS expr, TS body)
         => F(S.Let(name, expr, body));
 }
 
-sealed class BindIdSemantic<T>() : IBindSemantic<T, IS<Bind, T>>
+public sealed class BindIdSemantic<T>() : IBindSemantic<T, IS<Bind, T>>
 {
     public IS<Bind, T> Let(Identifier name, T expr, T body)
         => Bind.Let(name, expr, body);
 }
 
-sealed class BindMapSemantic<TS, TR>(Func<TS, TR> F) : IBindSemantic<TS, IS<Bind, TR>>
+public sealed class BindMapSemantic<TS, TR>(Func<TS, TR> F) : IBindSemantic<TS, IS<Bind, TR>>
 {
     public IS<Bind, TR> Let(Identifier name, TS expr, TS body)
         => Bind.Let(name, F(expr), F(body));

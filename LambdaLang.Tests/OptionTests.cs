@@ -16,9 +16,7 @@ public class OptionTests
         var e = s.Select(n => n + 2);
         
         // Assert
-        // Verify that e is Option.Some containing 42
-        var result = e.Evaluate(new OptionExtractSemantic<int>());
-        Assert.Equal(42, result);
+        Assert.Equal(Option.Some(42), e);
     }
     
     [Fact]
@@ -32,9 +30,7 @@ public class OptionTests
         var z = s.ZipWith(t, (a, b) => a * b);
         
         // Assert
-        // Verify that z is Option.Some containing 80 (40 * 2)
-        var result = z.Evaluate(new OptionExtractSemantic<int>());
-        Assert.Equal(80, result);
+        Assert.Equal(Option.Some(80), z);
     }
     
     [Fact]
@@ -47,15 +43,6 @@ public class OptionTests
                 select a + b + c;
         
         // Assert
-        // Verify that x is Option.Some containing 45 (40 + 2 + 3)
-        var result = x.Evaluate(new OptionExtractSemantic<int>());
-        Assert.Equal(45, result);
-    }
-    
-    // Helper class to extract the value from Some, or throw an exception for None
-    private class OptionExtractSemantic<T> : IOptionSemantic<T, T>
-    {
-        public T None() => throw new Xunit.Sdk.XunitException("Expected Some but got None");
-        public T Some(T value) => value;
+        Assert.Equal(Option.Some(45), x);
     }
 }
