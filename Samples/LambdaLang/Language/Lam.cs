@@ -1,11 +1,5 @@
 ﻿using SemanticAlgebra.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using SemanticAlgebra;
-using System.Security.Cryptography;
 
 namespace LambdaLang.Language;
 
@@ -108,20 +102,6 @@ sealed class LamEvalFolder : ILamSemantic<SigEvalData, SigEvalData>
             }));
         });
     }
-    //    // For a simple evaluation, we create a function that ignores the parameter
-    //    // In a full implementation, this would capture the environment and handle closures
-    //    return new SigLam(x => expr switch
-    //    {
-    //        SigInt intVal => intVal.Value,
-    //        _ => throw new InvalidOperationException("Lambda body must evaluate to an integer")
-    //    });
-    //}
 
-    public SigEvalData Var(Identifier name)
-    {
-        //// For a simple evaluation, variables can't be resolved without an environment
-        //// In a full implementation, this would look up the variable in the current environment
-        //throw new InvalidOperationException($"Unbound variable: {name.Name}");
-        return SigEvalState.From(s => (s, s[name]));
-    }
+    public SigEvalData Var(Identifier name) => SigEvalState.From(s => (s, s[name]));
 }

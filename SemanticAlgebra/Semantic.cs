@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SemanticAlgebra;
+﻿namespace SemanticAlgebra;
 
 // Semantic1 encodes f s -> r
 // TF<TS> is not valid dotnet type due to lack of builtin higher kinded type support

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SemanticAlgebra;
+﻿namespace SemanticAlgebra;
 
 // for any type f a, it is isomorphism to forall r. (f a -> r) -> r
 // for our higher kinded type encoding, 

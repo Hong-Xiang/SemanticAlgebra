@@ -1,10 +1,7 @@
-using Xunit;
-using SemanticAlgebra;
 using SemanticAlgebra.Data;
 using SemanticAlgebra.Fix;
 using System.Collections.Immutable;
 using LambdaLang.Tests.LambdaLang.Language;
-using LambdaLang;
 
 namespace LambdaLang.Tests.LambdaLang;
 

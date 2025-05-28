@@ -1,5 +1,3 @@
-using Xunit;
-
 namespace LambdaLang.Tests.IntLang;
 
 public class IntLangTests

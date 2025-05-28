@@ -1,5 +1,4 @@
 ﻿using SemanticAlgebra.Control;
-using SemanticAlgebra.Data;
 
 namespace SemanticAlgebra.Option;
 

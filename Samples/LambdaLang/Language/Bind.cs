@@ -1,11 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using SemanticAlgebra.Data;
 using SemanticAlgebra;
-using System.Collections.Immutable;
 
 namespace LambdaLang.Language;
 

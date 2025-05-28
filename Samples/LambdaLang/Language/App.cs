@@ -1,6 +1,5 @@
 using SemanticAlgebra;
 using SemanticAlgebra.Data;
-using System;
 
 namespace LambdaLang.Language;
 
