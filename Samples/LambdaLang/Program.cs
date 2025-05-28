@@ -1,9 +1,18 @@
 using LambdaLang;
 using LambdaLang.Language;
+using SemanticAlgebra;
 using SemanticAlgebra.Data;
 using SemanticAlgebra.Fix;
 using SemanticAlgebra.Option;
 using System.Collections.Immutable;
+
+// Demonstrate the Source Generator
+Console.WriteLine("=== Source Generator Demo ===");
+var testInstance = new TestClass();
+testInstance.TestMethod();
+Console.WriteLine();
+
+Console.WriteLine("=== Lambda Language Demo ===");
 
 var S = Fix<Sig>.SyntaxFactory.Prj();
 

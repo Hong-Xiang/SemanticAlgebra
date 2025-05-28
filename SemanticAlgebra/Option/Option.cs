@@ -17,7 +17,6 @@ public sealed class Option
     public static ISemantic1<Option, IS<Option, T>, IS<Option, T>> JoinS<T>()
         => new OptionJoinSemantic<T>();
 
-
     public static ISemantic1<Option, T, IS<Option, T>> Id<T>()
         => new OptionIdSemantic<T>();
 
@@ -85,6 +84,7 @@ sealed class OptionApplySemantic<TS, TR>()
 {
     public ISemantic1<Option, TS, IS<Option, TR>> None()
         => Kind1K<Option>.Semantic<TS, IS<Option, TR>>(static _ => Option.None<TR>());
+
     public ISemantic1<Option, TS, IS<Option, TR>> Some(Func<TS, TR> value)
         => Kind1K<Option>.Semantic<TS, IS<Option, TR>>(fs => fs.Select(value));
 }
