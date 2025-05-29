@@ -8,7 +8,7 @@ namespace SemanticAlgebra.SourceGenerator;
 [Generator]
 public sealed class SemanticKindSourceGenerator : IIncrementalGenerator
 {
-    private const string BrandAttributeFullQualifiedName = "SemanticAlgebra.Syntax.SemanticKind1Brand";
+    private const string BrandAttributeFullQualifiedName = "SemanticAlgebra.Syntax.SemanticKind1BrandAttribute";
 
     // Diagnostic descriptors for logging
     private static readonly DiagnosticDescriptor InfoDescriptor = new DiagnosticDescriptor(
@@ -25,13 +25,11 @@ public sealed class SemanticKindSourceGenerator : IIncrementalGenerator
         messageFormat: "SemanticKind Source Generator Debug: {0}",
         category: "SourceGenerator",
         DiagnosticSeverity.Info,
-        isEnabledByDefault: true);
-
-    public void Initialize(IncrementalGeneratorInitializationContext context)
+        isEnabledByDefault: true);    public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var brandClasses = context.SyntaxProvider.ForAttributeWithMetadataName(
                         BrandAttributeFullQualifiedName,
-                        predicate: static (s, _) => s is ClassDeclarationSyntax or InterfaceDeclarationSyntax,
+                        predicate: static (s, _) => s is ClassDeclarationSyntax,
                         transform: static (ctx, _) => GetSemanticTargetForGeneration(ctx));
 
         // Combine with compilation to get semantic model

@@ -5,7 +5,7 @@ namespace LambdaLang;
 /// <summary>
 /// Test class to demonstrate the SemanticAlgebra Source Generator
 /// </summary>
-[SemanticKind1Brand]
+[SemanticKind1BrandAttribute]
 public partial class TestClass
 {
     public string ExistingProperty { get; set; } = "Original";
