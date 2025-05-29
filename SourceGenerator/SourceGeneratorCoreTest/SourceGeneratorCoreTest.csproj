@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\SemanticAlgebra\SemanticAlgebra.csproj" />
     <ProjectReference Include="..\SourceGenerator\SemanticAlgebra.SourceGenerator.csproj" />
   </ItemGroup>
 

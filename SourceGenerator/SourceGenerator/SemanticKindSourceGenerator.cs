@@ -1,4 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Immutable;
 using System.Linq;
@@ -11,47 +11,76 @@ public sealed class SemanticKindSourceGenerator : IIncrementalGenerator
 {
     private const string BrandAttributeFullQualifiedName = "SemanticAlgebra.Syntax.SemanticKind1BrandAttribute";
 
-    // Diagnostic descriptors for logging
-    private static readonly DiagnosticDescriptor InfoDescriptor = new DiagnosticDescriptor(
-        id: "SGEN001",
-        title: "Source Generator Info",
-        messageFormat: "SemanticKind Source Generator: {0}",
-        category: "SourceGenerator",
-        DiagnosticSeverity.Info,
-        isEnabledByDefault: true);
-
-    private static readonly DiagnosticDescriptor DebugDescriptor = new DiagnosticDescriptor(
-        id: "SGEN002",
-        title: "Source Generator Debug",
-        messageFormat: "SemanticKind Source Generator Debug: {0}",
-        category: "SourceGenerator",
-        DiagnosticSeverity.Info,
-        isEnabledByDefault: true);    public void Initialize(IncrementalGeneratorInitializationContext context)
+    public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Create a provider for classes with SemanticKind1Brand attribute
-        var brandClasses = context.SyntaxProvider
+        // Step 1: Source provider - Find classes with SemanticKind1Brand attribute and ISemantic interface
+        var sourceProvider = context.SyntaxProvider
             .ForAttributeWithMetadataName(
                 BrandAttributeFullQualifiedName,
                 predicate: static (s, _) => s is ClassDeclarationSyntax,
-                transform: static (ctx, _) => GetSemanticTargetForGeneration(ctx))
-            .WithTrackingName("BrandClasses");
+                transform: static (ctx, _) => GetSemanticKindContext(ctx))
+            .Where(static ctx => ctx is not null)
+            .Select(static (ctx, _) => ctx!)
+            .WithTrackingName("SemanticKindContexts");
 
-        // Combine and generate sources
-        context.RegisterSourceOutput(brandClasses,
-            static (spc, source) => Execute(source, spc));
+
+        // Step 2: Generate Prj extension method (existing functionality)
+        var prjMethodProvider = sourceProvider
+            .WithTrackingName("PrjMethods");
+
+        context.RegisterSourceOutput(prjMethodProvider,
+            static (spc, ctx) => GeneratePrjExtensionMethod(spc, ctx));
+
+        // Step 3: Cases provider - Extract methods from ISemantic interface (each method = one case)
+        var casesProvider = sourceProvider
+            .SelectMany(static (ctx, _) => ctx?.Cases ?? ImmutableArray<SemanticCaseInfo>.Empty)
+            .WithTrackingName("SemanticCases");
+
+        // Step 4: Definitions provider - Generate D class constructors  
+        var definitionsProvider = sourceProvider
+            .Select(static (ctx, _) => ctx!)
+            .WithTrackingName("DataDefinitions");
+
+        context.RegisterSourceOutput(definitionsProvider,
+            static (spc, ctx) => GenerateDataDefinitions(spc, ctx));
+
+        // Step 5: Builders provider - Generate B class methods
+        var buildersProvider = sourceProvider
+            .Select(static (ctx, _) => ctx!)
+            .WithTrackingName("Builders");
+
+        context.RegisterSourceOutput(buildersProvider,
+            static (spc, ctx) => GenerateBuilders(spc, ctx));
     }
 
     /// <summary>
     /// Container for all information needed to generate code for a semantic kind
     /// </summary>
-    private sealed record class SemanticKindInfo(
+    private sealed record class SemanticKindContext(
         string ClassName,
         string? Namespace,
-        string? SemanticInterfaceName,
-        bool HasISemantic);    /// <summary>
-    /// Gets the semantic target for generation if it matches our criteria
+        InterfaceDeclarationSyntax? SemanticInterface,
+        ImmutableArray<SemanticCaseInfo> Cases);
+
+    /// <summary>
+    /// Information about a single case (method) in the ISemantic interface
     /// </summary>
-    private static SemanticKindInfo GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext context)
+    private sealed record class SemanticCaseInfo(
+        string MethodName,
+        ImmutableArray<SemanticParameterInfo> Parameters,
+        string ReturnType);
+
+    /// <summary>
+    /// Information about a parameter in a semantic method
+    /// </summary>
+    private sealed record class SemanticParameterInfo(
+        string Name,
+        string Type);
+
+    /// <summary>
+    /// Gets the semantic kind context for generation if it matches our criteria
+    /// </summary>
+    private static SemanticKindContext? GetSemanticKindContext(GeneratorAttributeSyntaxContext context)
     {
         var classDeclaration = (ClassDeclarationSyntax)context.TargetNode;
         var className = classDeclaration.Identifier.ValueText;
@@ -59,12 +88,20 @@ public sealed class SemanticKindSourceGenerator : IIncrementalGenerator
 
         // Look for ISemantic interface within the class
         var semanticInterface = FindISemanticInterface(classDeclaration);
-        
-        return new SemanticKindInfo(
+
+        if (semanticInterface == null)
+        {
+            return null;
+        }
+
+        // Extract cases (methods) from the ISemantic interface
+        var cases = ExtractSemanticCases(semanticInterface);
+
+        return new SemanticKindContext(
             className,
             namespaceName,
-            semanticInterface?.Identifier.ValueText,
-            semanticInterface != null);
+            semanticInterface,
+            cases);
     }
 
     /// <summary>
@@ -75,45 +112,60 @@ public sealed class SemanticKindSourceGenerator : IIncrementalGenerator
         return classDeclaration.Members
             .OfType<InterfaceDeclarationSyntax>()
             .FirstOrDefault(i => i.Identifier.ValueText == "ISemantic");
-    }    /// <summary>
-     /// Executes the source generation for the matched classes
-     /// </summary>
-    private static void Execute(SemanticKindInfo semanticInfo, SourceProductionContext context)
+    }
+
+    /// <summary>
+    /// Extracts semantic cases (methods) from the ISemantic interface
+    /// </summary>
+    private static ImmutableArray<SemanticCaseInfo> ExtractSemanticCases(InterfaceDeclarationSyntax semanticInterface)
     {
-        // Log execution start
-        ReportInfo(context, $"Starting source generation for: {semanticInfo.ClassName}");
+        var cases = ImmutableArray.CreateBuilder<SemanticCaseInfo>();
 
-        // Generate basic partial class (existing functionality)
-        GeneratePartialClass(context, semanticInfo);
-
-        // Generate Prj extension method if ISemantic interface is found
-        if (semanticInfo.HasISemantic)
+        foreach (var member in semanticInterface.Members.OfType<MethodDeclarationSyntax>())
         {
-            ReportDebug(context, $"Generating Prj extension method for: {semanticInfo.ClassName}");
-            GeneratePrjExtensionMethod(context, semanticInfo);
+            var methodName = member.Identifier.ValueText;
+            var returnType = member.ReturnType.ToString();
+
+            var parameters = member.ParameterList.Parameters
+                .Select(p => new SemanticParameterInfo(
+                    p.Identifier.ValueText,
+                    p.Type?.ToString() ?? "object"))
+                .ToImmutableArray();
+
+            cases.Add(new SemanticCaseInfo(methodName, parameters, returnType));
         }
 
-        ReportInfo(context, "Source generation completed successfully.");
-    }    /// <summary>
-    /// Generates a partial class with the SourceGenTest property
-    /// </summary>
-    private static void GeneratePartialClass(SourceProductionContext context, SemanticKindInfo semanticInfo)
-    {
-        var source = GenerateSourceCode(semanticInfo.Namespace, semanticInfo.ClassName);
-        context.AddSource($"{semanticInfo.ClassName}.SourceGenTest.g.cs", source);
+        return cases.ToImmutable();
     }
 
     /// <summary>
     /// Generates the Prj extension method for the semantic interface
     /// </summary>
-    private static void GeneratePrjExtensionMethod(SourceProductionContext context, SemanticKindInfo semanticInfo)
+    private static void GeneratePrjExtensionMethod(SourceProductionContext context, SemanticKindContext semanticContext)
     {
-        if (!semanticInfo.HasISemantic || semanticInfo.SemanticInterfaceName == null)
-            return;
+        var source = GeneratePrjExtensionCode(semanticContext.Namespace, semanticContext.ClassName);
+        context.AddSource($"{semanticContext.ClassName}Extension.Prj.g.cs", source);
+    }
 
-        var source = GeneratePrjExtensionCode(semanticInfo.Namespace, semanticInfo.ClassName);
-        context.AddSource($"{semanticInfo.ClassName}Extension.Prj.g.cs", source);
-    }    /// <summary>
+    /// <summary>
+    /// Generates the data definitions (D class) for the semantic kind
+    /// </summary>
+    private static void GenerateDataDefinitions(SourceProductionContext context, SemanticKindContext semanticContext)
+    {
+        var source = GenerateDataDefinitionsCode(semanticContext);
+        context.AddSource($"{semanticContext.ClassName}.DataDefinitions.g.cs", source);
+    }
+
+    /// <summary>
+    /// Generates the builders (B class) for the semantic kind
+    /// </summary>
+    private static void GenerateBuilders(SourceProductionContext context, SemanticKindContext semanticContext)
+    {
+        var source = GenerateBuildersCode(semanticContext);
+        context.AddSource($"{semanticContext.ClassName}.Builders.g.cs", source);
+    }
+
+    /// <summary>
     /// Gets the namespace of a class declaration
     /// </summary>
     private static string? GetNamespace(SyntaxNode classDeclaration)
@@ -133,34 +185,6 @@ public sealed class SemanticKindSourceGenerator : IIncrementalGenerator
         }
 
         return null;
-    }
-
-    /// <summary>
-    /// Generates the source code for the partial class
-    /// </summary>
-    private static string GenerateSourceCode(string? namespaceName, string className)
-    {
-        var sb = new StringBuilder();
-
-        sb.AppendLine("// <auto-generated />");
-        sb.AppendLine();
-
-        if (!string.IsNullOrEmpty(namespaceName))
-        {
-            sb.AppendLine($"namespace {namespaceName};");
-            sb.AppendLine();
-        }
-
-        sb.AppendLine($"partial class {className}");
-        sb.AppendLine("{");
-        sb.AppendLine("    /// <summary>");
-        sb.AppendLine("    /// Auto-generated property by SemanticAlgebra Source Generator");
-        sb.AppendLine("    /// </summary>");
-        sb.AppendLine("    public string SourceGenTest { get; } = \"TestGen\";");
-        sb.AppendLine("    public string SourceGenTest2 { get; } = \"TestGen\";");
-        sb.AppendLine("}");
-
-        return sb.ToString();
     }
 
     /// <summary>
@@ -193,16 +217,172 @@ public sealed class SemanticKindSourceGenerator : IIncrementalGenerator
         return sb.ToString();
     }
 
-    // Helper methods for logging to compiler output
-    private static void ReportInfo(SourceProductionContext context, string message)
+    /// <summary>
+    /// Generates the source code for the data definitions (D class)
+    /// </summary>
+    private static string GenerateDataDefinitionsCode(SemanticKindContext context)
     {
-        var diagnostic = Diagnostic.Create(InfoDescriptor, Location.None, message);
-        context.ReportDiagnostic(diagnostic);
+        var sb = new StringBuilder();
+
+        sb.AppendLine("// <auto-generated />");
+        sb.AppendLine("using SemanticAlgebra;");
+        sb.AppendLine();
+
+        if (!string.IsNullOrEmpty(context.Namespace))
+        {
+            sb.AppendLine($"namespace {context.Namespace};");
+            sb.AppendLine();
+        }
+
+        sb.AppendLine($"public sealed partial class {context.ClassName}");
+        sb.AppendLine("{");
+        sb.AppendLine("    /// <summary>");
+        sb.AppendLine("    /// Auto-generated data definitions");
+        sb.AppendLine("    /// </summary>");
+        sb.AppendLine("    public static partial class D");
+        sb.AppendLine("    {");
+
+        foreach (var case_ in context.Cases)
+        {
+            GenerateDataConstructor(sb, context.ClassName, case_);
+        }
+
+        sb.AppendLine("    }");
+        sb.AppendLine("}");
+
+        return sb.ToString();
     }
 
-    private static void ReportDebug(SourceProductionContext context, string message)
+    /// <summary>
+    /// Generates a single data constructor
+    /// </summary>
+    private static void GenerateDataConstructor(StringBuilder sb, string className, SemanticCaseInfo case_)
     {
-        var diagnostic = Diagnostic.Create(DebugDescriptor, Location.None, message);
-        context.ReportDiagnostic(diagnostic);
+        var constructorName = case_.MethodName;
+        var hasParameters = case_.Parameters.Length > 0;
+
+        sb.AppendLine($"        public sealed record class {constructorName}<T>(");
+
+        if (hasParameters)
+        {
+            for (int i = 0; i < case_.Parameters.Length; i++)
+            {
+                var param = case_.Parameters[i];
+                var paramType = ConvertSemanticTypeToConstructorType(param.Type);
+                var comma = i < case_.Parameters.Length - 1 ? "," : "";
+                sb.AppendLine($"            {paramType} {CapitalizeFirstLetter(param.Name)}{comma}");
+            }
+        }
+
+        sb.AppendLine($"        ) : IS<{className}, T>");
+        sb.AppendLine("        {");
+        sb.AppendLine("            public TR Evaluate<TR>(ISemantic1<" + className + ", T, TR> semantic)");
+
+        if (hasParameters)
+        {
+            var args = string.Join(", ", case_.Parameters.Select(p => CapitalizeFirstLetter(p.Name)));
+            sb.AppendLine($"                => semantic.Prj().{constructorName}({args});");
+        }
+        else
+        {
+            sb.AppendLine($"                => semantic.Prj().{constructorName}();");
+        }
+
+        sb.AppendLine("        }");
+        sb.AppendLine();
+    }
+
+    /// <summary>
+    /// Generates the source code for the builders (B class)
+    /// </summary>
+    private static string GenerateBuildersCode(SemanticKindContext context)
+    {
+        var sb = new StringBuilder();
+
+        sb.AppendLine("// <auto-generated />");
+        sb.AppendLine("using SemanticAlgebra;");
+        sb.AppendLine();
+
+        if (!string.IsNullOrEmpty(context.Namespace))
+        {
+            sb.AppendLine($"namespace {context.Namespace};");
+            sb.AppendLine();
+        }
+
+        sb.AppendLine($"public sealed partial class {context.ClassName}");
+        sb.AppendLine("{");
+        sb.AppendLine("    /// <summary>");
+        sb.AppendLine("    /// Auto-generated data value builders");
+        sb.AppendLine("    /// </summary>");
+        sb.AppendLine("    public static partial class B");
+        sb.AppendLine("    {");
+
+        foreach (var case_ in context.Cases)
+        {
+            GenerateBuilderMethod(sb, context.ClassName, case_);
+        }
+
+        sb.AppendLine("    }");
+        sb.AppendLine("}");
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Generates a single builder method
+    /// </summary>
+    private static void GenerateBuilderMethod(StringBuilder sb, string className, SemanticCaseInfo case_)
+    {
+        var methodName = case_.MethodName;
+        var hasParameters = case_.Parameters.Length > 0;
+
+        sb.Append($"        public static IS<{className}, T> {methodName}<T>(");
+
+        if (hasParameters)
+        {
+            var paramList = string.Join(", ", case_.Parameters.Select(p =>
+            {
+                var paramType = ConvertSemanticTypeToConstructorType(p.Type);
+                return $"{paramType} {p.Name}";
+            }));
+            sb.Append(paramList);
+        }
+
+        sb.AppendLine($") => new D.{methodName}<T>(");
+
+        if (hasParameters)
+        {
+            var argList = string.Join(", ", case_.Parameters.Select(p => p.Name));
+            sb.AppendLine($"            {argList}");
+        }
+
+        sb.AppendLine("        );");
+        sb.AppendLine();
+    }
+
+    /// <summary>
+    /// Converts semantic method parameter types to constructor parameter types
+    /// </summary>
+    private static string ConvertSemanticTypeToConstructorType(string semanticType)
+    {
+        // Convert "TS" to "T", and other generic parameter types
+        return semanticType switch
+        {
+            "TS" => "T",
+            "TR" => "T", // Generally, in constructors we store T
+            _ when semanticType.StartsWith("TS") => semanticType.Replace("TS", "T"),
+            _ => semanticType
+        };
+    }
+
+    /// <summary>
+    /// Capitalizes the first letter of a string
+    /// </summary>
+    private static string CapitalizeFirstLetter(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return input;
+
+        return char.ToUpper(input[0]) + input.Substring(1);
     }
 }
