@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 
@@ -27,56 +28,95 @@ public sealed class SemanticKindSourceGenerator : IIncrementalGenerator
         DiagnosticSeverity.Info,
         isEnabledByDefault: true);    public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var brandClasses = context.SyntaxProvider.ForAttributeWithMetadataName(
-                        BrandAttributeFullQualifiedName,
-                        predicate: static (s, _) => s is ClassDeclarationSyntax,
-                        transform: static (ctx, _) => GetSemanticTargetForGeneration(ctx));
+        // Create a provider for classes with SemanticKind1Brand attribute
+        var brandClasses = context.SyntaxProvider
+            .ForAttributeWithMetadataName(
+                BrandAttributeFullQualifiedName,
+                predicate: static (s, _) => s is ClassDeclarationSyntax,
+                transform: static (ctx, _) => GetSemanticTargetForGeneration(ctx))
+            .WithTrackingName("BrandClasses");
 
-        // Combine with compilation to get semantic model
-
-        // Generate source for each class
+        // Combine and generate sources
         context.RegisterSourceOutput(brandClasses,
             static (spc, source) => Execute(source, spc));
     }
 
     /// <summary>
+    /// Container for all information needed to generate code for a semantic kind
+    /// </summary>
+    private sealed record class SemanticKindInfo(
+        string ClassName,
+        string? Namespace,
+        string? SemanticInterfaceName,
+        bool HasISemantic);    /// <summary>
     /// Gets the semantic target for generation if it matches our criteria
     /// </summary>
-    private static ClassDeclarationSyntax GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext context)
+    private static SemanticKindInfo GetSemanticTargetForGeneration(GeneratorAttributeSyntaxContext context)
     {
-        return (ClassDeclarationSyntax)context.TargetNode;
-    }/// <summary>
+        var classDeclaration = (ClassDeclarationSyntax)context.TargetNode;
+        var className = classDeclaration.Identifier.ValueText;
+        var namespaceName = GetNamespace(classDeclaration);
+
+        // Look for ISemantic interface within the class
+        var semanticInterface = FindISemanticInterface(classDeclaration);
+        
+        return new SemanticKindInfo(
+            className,
+            namespaceName,
+            semanticInterface?.Identifier.ValueText,
+            semanticInterface != null);
+    }
+
+    /// <summary>
+    /// Finds the ISemantic interface within a class declaration
+    /// </summary>
+    private static InterfaceDeclarationSyntax? FindISemanticInterface(ClassDeclarationSyntax classDeclaration)
+    {
+        return classDeclaration.Members
+            .OfType<InterfaceDeclarationSyntax>()
+            .FirstOrDefault(i => i.Identifier.ValueText == "ISemantic");
+    }    /// <summary>
      /// Executes the source generation for the matched classes
      /// </summary>
-    private static void Execute(ClassDeclarationSyntax brandClass, SourceProductionContext context)
+    private static void Execute(SemanticKindInfo semanticInfo, SourceProductionContext context)
     {
         // Log execution start
-        ReportInfo(context, $"Starting source generation. Found {brandClass.Identifier} potential classes.");
+        ReportInfo(context, $"Starting source generation for: {semanticInfo.ClassName}");
 
-        var className = brandClass.Identifier.ValueText;
-        ReportDebug(context, $"Generating partial class for: {className}");
-        GeneratePartialClass(context, brandClass);
+        // Generate basic partial class (existing functionality)
+        GeneratePartialClass(context, semanticInfo);
+
+        // Generate Prj extension method if ISemantic interface is found
+        if (semanticInfo.HasISemantic)
+        {
+            ReportDebug(context, $"Generating Prj extension method for: {semanticInfo.ClassName}");
+            GeneratePrjExtensionMethod(context, semanticInfo);
+        }
 
         ReportInfo(context, "Source generation completed successfully.");
-    }
-
-    /// <summary>
+    }    /// <summary>
     /// Generates a partial class with the SourceGenTest property
     /// </summary>
-    private static void GeneratePartialClass(SourceProductionContext context, ClassDeclarationSyntax classDeclaration)
+    private static void GeneratePartialClass(SourceProductionContext context, SemanticKindInfo semanticInfo)
     {
-        var namespaceName = GetNamespace(classDeclaration);
-        var className = classDeclaration.Identifier.ValueText;
-
-        var source = GenerateSourceCode(namespaceName, className);
-
-        context.AddSource($"{className}.SourceGenTest.g.cs", source);
+        var source = GenerateSourceCode(semanticInfo.Namespace, semanticInfo.ClassName);
+        context.AddSource($"{semanticInfo.ClassName}.SourceGenTest.g.cs", source);
     }
 
     /// <summary>
+    /// Generates the Prj extension method for the semantic interface
+    /// </summary>
+    private static void GeneratePrjExtensionMethod(SourceProductionContext context, SemanticKindInfo semanticInfo)
+    {
+        if (!semanticInfo.HasISemantic || semanticInfo.SemanticInterfaceName == null)
+            return;
+
+        var source = GeneratePrjExtensionCode(semanticInfo.Namespace, semanticInfo.ClassName);
+        context.AddSource($"{semanticInfo.ClassName}Extension.Prj.g.cs", source);
+    }    /// <summary>
     /// Gets the namespace of a class declaration
     /// </summary>
-    private static string GetNamespace(SyntaxNode classDeclaration)
+    private static string? GetNamespace(SyntaxNode classDeclaration)
     {
         // Try to get namespace from namespace declaration
         var namespaceDeclaration = classDeclaration.Ancestors().OfType<NamespaceDeclarationSyntax>().FirstOrDefault();
@@ -92,13 +132,13 @@ public sealed class SemanticKindSourceGenerator : IIncrementalGenerator
             return fileScopedNamespace.Name.ToString();
         }
 
-        return string.Empty;
+        return null;
     }
 
     /// <summary>
     /// Generates the source code for the partial class
     /// </summary>
-    private static string GenerateSourceCode(string namespaceName, string className)
+    private static string GenerateSourceCode(string? namespaceName, string className)
     {
         var sb = new StringBuilder();
 
@@ -118,6 +158,36 @@ public sealed class SemanticKindSourceGenerator : IIncrementalGenerator
         sb.AppendLine("    /// </summary>");
         sb.AppendLine("    public string SourceGenTest { get; } = \"TestGen\";");
         sb.AppendLine("    public string SourceGenTest2 { get; } = \"TestGen\";");
+        sb.AppendLine("}");
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Generates the source code for the Prj extension method
+    /// </summary>
+    private static string GeneratePrjExtensionCode(string? namespaceName, string className)
+    {
+        var sb = new StringBuilder();
+
+        sb.AppendLine("// <auto-generated />");
+        sb.AppendLine("using SemanticAlgebra;");
+        sb.AppendLine();
+
+        if (!string.IsNullOrEmpty(namespaceName))
+        {
+            sb.AppendLine($"namespace {namespaceName};");
+            sb.AppendLine();
+        }
+
+        sb.AppendLine($"public static partial class {className}Extension");
+        sb.AppendLine("{");
+        sb.AppendLine("    /// <summary>");
+        sb.AppendLine("    /// Auto-generated Prj extension method for semantic projection");
+        sb.AppendLine("    /// </summary>");
+        sb.AppendLine($"    public static {className}.ISemantic<TS, TR> Prj<TS, TR>(");
+        sb.AppendLine($"        this ISemantic1<{className}, TS, TR> semantic");
+        sb.AppendLine($"    ) => ({className}.ISemantic<TS, TR>)semantic;");
         sb.AppendLine("}");
 
         return sb.ToString();

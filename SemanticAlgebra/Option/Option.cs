@@ -1,18 +1,50 @@
 ﻿using SemanticAlgebra.Control;
+using SemanticAlgebra.Syntax;
 
 namespace SemanticAlgebra.Option;
 
-public sealed class Option
+[SemanticKind1Brand]
+public sealed partial class Option
     : IMonad<Option>
 {
-    public static IS<Option, T> None<T>() => new None<T>();
-    public static IS<Option, T> Some<T>(T value) => new Some<T>(value);
+    public interface ISemantic<in TS, out TR>
+        : ISemantic1<Option, TS, TR>
+    {
+        TR None();
+        TR Some(TS value);
+    }
 
+    /// <summary>
+    /// Option data value builders
+    /// </summary>
+    public static class B
+    {
+        public static IS<Option, T> None<T>() => new D.None<T>();
+        public static IS<Option, T> Some<T>(T value) => new D.Some<T>(value);
+    }
+
+    /// <summary>
+    /// Option data definitions 
+    /// </summary>
+    public static class D
+    {
+        public sealed record class None<T>() : IS<Option, T>
+        {
+            public TR Evaluate<TR>(ISemantic1<Option, T, TR> semantic)
+                => semantic.Prj().None();
+        }
+
+        public sealed record class Some<T>(T Value) : IS<Option, T>
+        {
+            public TR Evaluate<TR>(ISemantic1<Option, T, TR> semantic)
+                => semantic.Prj().Some(Value);
+        }
+    }
 
     public static ISemantic1<Option, Func<TS, TR>, ISemantic1<Option, TS, IS<Option, TR>>> ApplyS<TS, TR>()
         => new OptionApplySemantic<TS, TR>();
 
-    public static IS<Option, T> Pure<T>(T value) => Some(value);
+    public static IS<Option, T> Pure<T>(T value) => B.Some(value);
 
     public static ISemantic1<Option, IS<Option, T>, IS<Option, T>> JoinS<T>()
         => new OptionJoinSemantic<T>();
@@ -27,70 +59,44 @@ public sealed class Option
         => new OptionComposeFSemantic<TS, TI, TR>(s.Prj(), f);
 }
 
-public interface IOptionSemantic<in TS, out TR>
-    : ISemantic1<Option, TS, TR>
-{
-    TR None();
-    TR Some(TS value);
-}
-
-public static class OptionExtension
-{
-    public static IOptionSemantic<TS, TR> Prj<TS, TR>(
-        this ISemantic1<Option, TS, TR> semantic
-    ) => (IOptionSemantic<TS, TR>)semantic;
-}
-
-public sealed record class None<T>() : IS<Option, T>
-{
-    public TR Evaluate<TR>(ISemantic1<Option, T, TR> semantic)
-        => semantic.Prj().None();
-}
-
-public sealed record class Some<T>(T Value) : IS<Option, T>
-{
-    public TR Evaluate<TR>(ISemantic1<Option, T, TR> semantic)
-        => semantic.Prj().Some(Value);
-}
-
 sealed class OptionMapSemantic<TS, TR>(
-    Func<TS, TR> f) : IOptionSemantic<TS, IS<Option, TR>>
+    Func<TS, TR> f) : Option.ISemantic<TS, IS<Option, TR>>
 {
     public IS<Option, TR> None()
-        => Option.None<TR>();
+        => Option.B.None<TR>();
 
     public IS<Option, TR> Some(TS value)
-        => Option.Some(f(value));
+        => Option.B.Some(f(value));
 }
 
-sealed class OptionIdSemantic<T>() : IOptionSemantic<T, IS<Option, T>>
+sealed class OptionIdSemantic<T>() : Option.ISemantic<T, IS<Option, T>>
 {
-    public IS<Option, T> None() => Option.None<T>();
-    public IS<Option, T> Some(T value) => Option.Some(value);
+    public IS<Option, T> None() => Option.B.None<T>();
+    public IS<Option, T> Some(T value) => Option.B.Some(value);
 }
 
 sealed class OptionComposeFSemantic<TS, TI, TR>(
-    IOptionSemantic<TS, TI> s,
+    Option.ISemantic<TS, TI> s,
     Func<TI, TR> f
 )
-    : IOptionSemantic<TS, TR>
+    : Option.ISemantic<TS, TR>
 {
     public TR None() => f(s.None());
     public TR Some(TS value) => f(s.Some(value));
 }
 
 sealed class OptionApplySemantic<TS, TR>()
-    : IOptionSemantic<Func<TS, TR>, ISemantic1<Option, TS, IS<Option, TR>>>
+    : Option.ISemantic<Func<TS, TR>, ISemantic1<Option, TS, IS<Option, TR>>>
 {
     public ISemantic1<Option, TS, IS<Option, TR>> None()
-        => Kind1K<Option>.Semantic<TS, IS<Option, TR>>(static _ => Option.None<TR>());
+        => Kind1K<Option>.Semantic<TS, IS<Option, TR>>(static _ => Option.B.None<TR>());
 
     public ISemantic1<Option, TS, IS<Option, TR>> Some(Func<TS, TR> value)
         => Kind1K<Option>.Semantic<TS, IS<Option, TR>>(fs => fs.Select(value));
 }
 
-sealed class OptionJoinSemantic<T>() : IOptionSemantic<IS<Option, T>, IS<Option, T>>
+sealed class OptionJoinSemantic<T>() : Option.ISemantic<IS<Option, T>, IS<Option, T>>
 {
-    public IS<Option, T> None() => Option.None<T>();
+    public IS<Option, T> None() => Option.B.None<T>();
     public IS<Option, T> Some(IS<Option, T> value) => value;
 }
