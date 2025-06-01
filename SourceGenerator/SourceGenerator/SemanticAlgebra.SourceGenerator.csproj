@@ -11,6 +11,9 @@
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<DevelopmentDependency>true</DevelopmentDependency>
 	</PropertyGroup>
+	<ItemGroup>
+		<InternalsVisibleTo Include="SourceGeneratorCoreTest" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="4.14.0">

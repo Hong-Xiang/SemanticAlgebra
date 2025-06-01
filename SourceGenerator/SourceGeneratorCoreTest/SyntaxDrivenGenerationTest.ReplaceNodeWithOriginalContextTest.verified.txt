@@ -1,0 +1,8 @@
+﻿using SemanticAlgebra.Control;
+using SemanticAlgebra.Syntax;
+
+namespace SemanticAlgebra.Option;
+public sealed partial class Option
+{
+    int Bar() => 42;
+}

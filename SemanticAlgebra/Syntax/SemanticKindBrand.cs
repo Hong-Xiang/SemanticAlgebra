@@ -5,3 +5,8 @@ namespace SemanticAlgebra.Syntax;
 public sealed class SemanticKind1BrandAttribute : Attribute
 {
 }
+
+[AttributeUsage(AttributeTargets.Interface)]
+public sealed class Semantic1Attribute : Attribute
+{
+}

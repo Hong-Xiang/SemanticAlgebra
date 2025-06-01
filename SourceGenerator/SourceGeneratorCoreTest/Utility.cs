@@ -14,8 +14,8 @@ namespace SemanticAlgebra.Syntax;
 public sealed class SemanticKind1BrandAttribute : Attribute
 {
 }
-", path: "syntax.cs");
-
+", path: "SemanticKind1BrandAttribute.cs");
+    
     public static IEnumerable<GeneratedSourceResult> GeneratedSources(this GeneratorDriverRunResult? result)
         => result is null ? [] : result.Results.SelectMany(r => r.GeneratedSources);
 
@@ -25,16 +25,18 @@ using SemanticAlgebra.Syntax;
 
 namespace SemanticAlgebra.Option;
 
-[SemanticKind1Brand]
 public sealed partial class Option
     : IMonad<Option>
 {
+    [Semantic1]
     public interface ISemantic<in TS, out TR>
         : ISemantic1<Option, TS, TR>
     {
         TR None();
         TR Some(TS value);
     }
+    
+    public void Foo() { }
 }
 """;
 }

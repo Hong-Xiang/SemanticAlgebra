@@ -55,3 +55,7 @@ nunit-*.xml
 
 .vs/
 .idea/
+
+# Verify Test Files
+*.received.*
+SemanticAlgebra.sln.DotSettings.user
