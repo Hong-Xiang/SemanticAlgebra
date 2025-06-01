@@ -64,6 +64,24 @@ public sealed class OptionSemanticDefinitionGeneratorTest(
         Output.WriteLine(result.NormalizeWhitespace().ToFullString());
     }
 
+    [Fact]
+    public void OptionMapSemanticSyntaxShouldWork()
+    {
+        var definition = GetDefinition($"{nameof(OptionIdSemanticSyntaxShouldWork)}.dll");
+        var generator = new Semantic1MapSemanticGenerator(definition);
+        var result = generator.GenerateSemanticDefinition();
+        Output.WriteLine(result.NormalizeWhitespace().ToFullString());
+    }
+
+    [Fact]
+    public void OptionMapUsageMethodSyntaxShouldWork()
+    {
+        var definition = GetDefinition($"{nameof(OptionIdSemanticSyntaxShouldWork)}.dll");
+        var generator = new Semantic1MapSemanticGenerator(definition);
+        var result = generator.GenerateSemanticUsageBrandMethod();
+        Output.WriteLine(result.NormalizeWhitespace().ToFullString());
+    }
+
     Semantic1Definition GetDefinition([CallerMemberName] string methodName = "test")
     {
         var compilation = CSharpCompilation.Create(

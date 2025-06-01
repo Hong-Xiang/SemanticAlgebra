@@ -53,8 +53,22 @@ public sealed partial class Option
     // => new IdSemantic<T>();
     // public static global::SemanticAlgebra.ISemantic1<Option, TS, global::SemanticAlgebra.IS<Option, TS>> Id<TS>() => new global::SemanticAlgebra.Option.Option.IdSemantic<TS>();
 
-    public static ISemantic1<Option, TS, IS<Option, TR>> MapS<TS, TR>(Func<TS, TR> f)
-        => new OptionMapSemantic<TS, TR>(f);
+    // public static
+    //     global::SemanticAlgebra.ISemantic1<global::SemanticAlgebra.Option.Option, TS,
+    //         global::SemanticAlgebra.IS<global::SemanticAlgebra.Option.Option, TR>>
+    //     MapS<TS, TR>(global::System.Func<TS, TR> f) => new global::SemanticAlgebra.Option.Option.MapSemantic<TS, TR>(f);
+    //
+    // sealed class MapSemantic<TS, TR>(
+    //     Func<TS, TR> f) : Option.ISemantic<TS, IS<Option, TR>>
+    // {
+    //     public IS<Option, TR> None()
+    //         => Option.B.None<TR>();
+    //
+    //     public IS<Option, TR> Some(TS value)
+    //         => Option.B.Some(f(value));
+    // }
+    // public static ISemantic1<Option, TS, IS<Option, TR>> MapS<TS, TR>(Func<TS, TR> f)
+    // => new OptionMapSemantic<TS, TR>(f);
 
     // public static global::SemanticAlgebra.ISemantic1<global::SemanticAlgebra.Option.Option, TS, TR> Compose<TS, TI, TR>(global::SemanticAlgebra.ISemantic1<global::SemanticAlgebra.Option.Option, TS, TI> s, global::System.Func<TI, TR> f) => new global::SemanticAlgebra.Option.Option.ComposeSemantic<TS, TI, TR>(s.Prj(), f);
     // public static ISemantic1<Option, TS, TR> Compose<TS, TI, TR>(ISemantic1<Option, TS, TI> s, Func<TI, TR> f)
@@ -84,16 +98,6 @@ public sealed partial class Option
 //     public static Option.ISemantic<TS, TR> Prj<TS, TR>(this ISemantic1<Option, TS, TR> s)
 //         => (Option.ISemantic<TS, TR>)s;
 // }
-
-sealed class OptionMapSemantic<TS, TR>(
-    Func<TS, TR> f) : Option.ISemantic<TS, IS<Option, TR>>
-{
-    public IS<Option, TR> None()
-        => Option.B.None<TR>();
-
-    public IS<Option, TR> Some(TS value)
-        => Option.B.Some(f(value));
-}
 
 // sealed class OptionComposeFSemantic<TS, TI, TR>(
 //     Option.ISemantic<TS, TI> s,

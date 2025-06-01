@@ -24,8 +24,8 @@ public sealed partial class IntLang : IFunctor<IntLang>
     // public static ISemantic1<IntLang, TS, TR> Compose<TS, TI, TR>(ISemantic1<IntLang, TS, TI> s, Func<TI, TR> f)
     // => new IntLangComposeSemantic<TS, TI, TR>(s.Prj(), f);
 
-    public static ISemantic1<IntLang, TS, IS<IntLang, TR>> MapS<TS, TR>(Func<TS, TR> f)
-        => new IntLangMapSemantic<TS, TR>(f);
+    // public static ISemantic1<IntLang, TS, IS<IntLang, TR>> MapS<TS, TR>(Func<TS, TR> f)
+    //     => new IntLangMapSemantic<TS, TR>(f);
 
 
     public static ISemantic<Fix<IntLang>, Fix<IntLang>> SyntaxFactory => Fix<IntLang>.SyntaxFactory.Prj();
@@ -67,16 +67,16 @@ public sealed partial class IntLang : IFunctor<IntLang>
 //     public TR Add(TS a, TS b) => f(s.Add(a, b));
 // }
 //
-sealed class IntLangMapSemantic<TS, TR>(
-    Func<TS, TR> F)
-    : IntLang.ISemantic<TS, IS<IntLang, TR>>
-{
-    public IS<IntLang, TR> LitI(int value)
-        => IntLang.B.LitI<TR>(value);
-
-    public IS<IntLang, TR> Add(TS a, TS b)
-        => IntLang.B.Add(F(a), F(b));
-}
+// sealed class IntLangMapSemantic<TS, TR>(
+//     Func<TS, TR> F)
+//     : IntLang.ISemantic<TS, IS<IntLang, TR>>
+// {
+//     public IS<IntLang, TR> LitI(int value)
+//         => IntLang.B.LitI<TR>(value);
+//
+//     public IS<IntLang, TR> Add(TS a, TS b)
+//         => IntLang.B.Add(F(a), F(b));
+// }
 
 sealed class IntFolder : IntLang.ISemantic<int, int>
 {

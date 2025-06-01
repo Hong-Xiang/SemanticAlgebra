@@ -29,6 +29,7 @@ public class Semantic1Generator : IIncrementalGenerator
 
         UseSemanticGenerator(context, semantic1, (d) => new Semantic1IdSemanticGenerator(d));
         UseSemanticGenerator(context, semantic1, (d) => new Semantic1ComposeSemanticGenerator(d));
+        UseSemanticGenerator(context, semantic1, (d) => new Semantic1MapSemanticGenerator(d));
     }
 
 
