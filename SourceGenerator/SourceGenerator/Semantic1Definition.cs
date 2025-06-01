@@ -17,10 +17,10 @@ public record class Semantic1Definition(
     INamedTypeSymbol BrandSymbol)
 {
     public IdentifierNameSyntax TSName { get; } =
-        IdentifierName(ConcreteSemanticSyntax.TypeParameterList.Parameters[0].Identifier);
+        IdentifierName(ConcreteSemanticSyntax.TypeParameterList?.Parameters[0].Identifier ?? Identifier("TS"));
 
     public IdentifierNameSyntax TRName { get; } =
-        IdentifierName(ConcreteSemanticSyntax.TypeParameterList.Parameters[1].Identifier);
+        IdentifierName(ConcreteSemanticSyntax.TypeParameterList?.Parameters[1].Identifier ?? Identifier("TR"));
 
     public TypeSyntax BrandName { get; } = IdentifierName(BrandSymbol.Name);
 

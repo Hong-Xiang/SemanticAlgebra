@@ -13,7 +13,7 @@ public static class SyntaxFactoryExtension
     public static SyntaxNode ReplaceContainerMembers(
         this SyntaxNode parent,
         MemberDeclarationSyntax hole
-    ) => new ParentNodeHoleVisitor(hole).Visit(parent);
+    ) => new ParentNodeHoleVisitor(hole).Visit(parent) ?? throw new InvalidOperationException();
 
     public static SyntaxNode ReplaceNestedContainerMemberRecursively(
         this MemberDeclarationSyntax source,
@@ -51,10 +51,10 @@ public static class SyntaxFactoryExtension
     //         var ns => QualifiedName(ns.FullQualifiedName(), IdentifierName(node.Name))
     //     };
     public static NameSyntax ToReferenceName(this INamespaceOrTypeSymbol node)
-        => node.Accept(new ReferenceNameVisitor(new NameSettings(true)));
+        => node.Accept(new ReferenceNameVisitor(new NameSettings(true))) ?? throw new InvalidOperationException();
 
     public static NameSyntax ToDefinitionName(this INamespaceSymbol node)
-        => node.Accept(new ReferenceNameVisitor(new NameSettings(false)));
+        => node.Accept(new ReferenceNameVisitor(new NameSettings(false))) ?? throw new InvalidOperationException();
 }
 
 sealed record class NameSettings(

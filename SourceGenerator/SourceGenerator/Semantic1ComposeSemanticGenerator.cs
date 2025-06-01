@@ -29,6 +29,9 @@ internal sealed class Semantic1ComposeSemanticGenerator : ISemanticImplementatio
         F = Parameter(Identifier(ImplementationMethod.Parameters[1].Name))
             .WithType(ImplementationMethod.Parameters[1].Type.ToReferenceName());
         TypeParameters = ImplementationMethod.TypeParameters.Select(p => TypeParameter(p.Name)).ToArray();
+        TS = IdentifierName(TypeParameters[0].Identifier);
+        TI = IdentifierName(TypeParameters[1].Identifier);
+        TR = IdentifierName(TypeParameters[2].Identifier);
     }
 
     public static string BrandMethodName => "Compose";
@@ -38,6 +41,9 @@ internal sealed class Semantic1ComposeSemanticGenerator : ISemanticImplementatio
     public ParameterSyntax S { get; }
     public ParameterSyntax F { get; }
     public TypeParameterSyntax[] TypeParameters { get; }
+    public TypeSyntax TS { get; }
+    public TypeSyntax TI { get; }
+    public TypeSyntax TR { get; }
 
     public ClassDeclarationSyntax GenerateSemanticDefinition()
     {
@@ -45,7 +51,11 @@ internal sealed class Semantic1ComposeSemanticGenerator : ISemanticImplementatio
                .AddModifiers(Token(SyntaxKind.SealedKeyword))
                .AddTypeParameterListParameters(TypeParameters)
                .AddBaseListTypes(
-                   SimpleBaseType(ImplementationMethod.ReturnType.ToReferenceName())
+                   SimpleBaseType(
+                       Definition.ConcreteSemanticName(
+                           TS, TR
+                       )
+                   )
                )
                .AddParameterListParameters(S, F)
                .AddMembers(

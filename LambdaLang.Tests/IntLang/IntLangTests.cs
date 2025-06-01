@@ -1,11 +1,15 @@
+using SemanticAlgebra.Fix;
+using Xunit.Abstractions;
+
 namespace LambdaLang.Tests.IntLang;
 
-public class IntLangTests
+public class IntLangTests(ITestOutputHelper Output)
 {
     [Fact]
     public void IntLangFold_ReturnsExpectedResult()
     {
         // Arrange
+        
         var sf = IntLang.SyntaxFactory;
         var fe = sf.LitI(40);
         var fadd = sf.Add(fe, fe);
