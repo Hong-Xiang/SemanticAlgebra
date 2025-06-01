@@ -5,6 +5,8 @@ using SemanticAlgebra.Fix;
 using SemanticAlgebra.Option;
 using System.Collections.Immutable;
 
+Console.WriteLine("=== Lambda Language Demo ===");
+
 var S = Fix<Sig>.SyntaxFactory.Prj();
 
 var x = new Identifier("x");

@@ -1,0 +1,7 @@
+﻿namespace SemanticAlgebra.Option
+{
+    public static class OptionExtensions
+    {
+        public static global::SemanticAlgebra.Option.Option.ISemantic<TS, TR> Prj<TS, TR>(this global::SemanticAlgebra.ISemantic1<global::SemanticAlgebra.Option.Option, TS, TR> s) => (global::SemanticAlgebra.Option.Option.ISemantic<TS, TR>)s;
+    }
+}
