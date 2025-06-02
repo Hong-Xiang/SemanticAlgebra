@@ -1,15 +1,16 @@
 ﻿using SemanticAlgebra.Control;
+using SemanticAlgebra.Syntax;
 
 namespace SemanticAlgebra.Data;
 
-public sealed class State<S> : IMonad<State<S>>
+public sealed partial class State<S> : IMonad<State<S>>
 {
-    public static ISemantic1<State<S>, TS, TR> Compose<TS, TI, TR>(ISemantic1<State<S>, TS, TI> s, Func<TI, TR> f)
-        => new ComposeSemantic<TS, TI, TR>(s.Prj(), f);
-
-
-    public static ISemantic1<State<S>, T, IS<State<S>, T>> Id<T>()
-        => new IdSemantic<T>();
+    // public static ISemantic1<State<S>, TS, TR> Compose<TS, TI, TR>(ISemantic1<State<S>, TS, TI> s, Func<TI, TR> f)
+    //     => new ComposeSemantic<TS, TI, TR>(s.Prj(), f);
+    //
+    //
+    // public static ISemantic1<State<S>, T, IS<State<S>, T>> Id<T>()
+    //     => new IdSemantic<T>();
 
     public static ISemantic1<State<S>, TS, IS<State<S>, TR>> MapS<TS, TR>(Func<TS, TR> f)
         => new MapSemantic<TS, TR>(f);
@@ -20,10 +21,11 @@ public sealed class State<S> : IMonad<State<S>>
         T Data { get; }
     }
 
-    public interface ISemantic<in TI, out TO>
-        : ISemantic1<State<S>, TI, TO>
+    [Semantic1]
+    public interface ISemantic<in TS, out TR>
+        : ISemantic1<State<S>, TS, TR>
     {
-        TO RunState(Func<S, IStateResult<TI>> f);
+        TR RunState(Func<S, IStateResult<TS>> fn);
     }
 
     public sealed record class StateResult<T>(S State, T Data) : IStateResult<T>
@@ -41,21 +43,21 @@ public sealed class State<S> : IMonad<State<S>>
     }
 
 
-    sealed class IdSemantic<T> : ISemantic<T, IS<State<S>, T>>
-    {
-        public IS<State<S>, T> RunState(Func<S, IStateResult<T>> f)
-            => From(s =>
-            {
-                var r = f(s);
-                return (r.State, r.Data);
-            });
-    }
-
-
-    sealed class ComposeSemantic<TS, TI, TR>(ISemantic<TS, TI> S, Func<TI, TR> F) : ISemantic<TS, TR>
-    {
-        public TR RunState(Func<S, IStateResult<TS>> f) => F(S.RunState(f));
-    }
+    // sealed class IdSemantic<T> : ISemantic<T, IS<State<S>, T>>
+    // {
+    //     public IS<State<S>, T> RunState(Func<S, IStateResult<T>> f)
+    //         => From(s =>
+    //         {
+    //             var r = f(s);
+    //             return (r.State, r.Data);
+    //         });
+    // }
+    //
+    //
+    // sealed class ComposeSemantic<TS, TI, TR>(ISemantic<TS, TI> S, Func<TI, TR> F) : ISemantic<TS, TR>
+    // {
+    //     public TR RunState(Func<S, IStateResult<TS>> f) => F(S.RunState(f));
+    // }
 
     public sealed class MapSemantic<TS, TR>(Func<TS, TR> F) : ISemantic<TS, IS<State<S>, TR>>
     {
@@ -68,7 +70,7 @@ public sealed class State<S> : IMonad<State<S>>
     }
 
     public static IS<State<S>, T> From<T>(Func<S, (S, T)> f)
-     => new Data<T>(s => f(s));
+        => new Data<T>(s => f(s));
 
 
     sealed class RunSemantic<T>(S s) : ISemantic<T, IStateResult<T>>
@@ -119,11 +121,11 @@ public sealed class State<S> : IMonad<State<S>>
     }
 }
 
-
 public static class State
 {
-    public static State<S>.ISemantic<TS, TR> Prj<S, TS, TR>(this ISemantic1<State<S>, TS, TR> s)
-        => (State<S>.ISemantic<TS, TR>)s;
+    // public static State<S>.ISemantic<TS, TR> Prj<S, TS, TR>(this ISemantic1<State<S>, TS, TR> s)
+    //     => (State<S>.ISemantic<TS, TR>)s;
+
     public static State<S>.IStateResult<T> Run<S, T>(this IS<State<S>, T> state, S s)
         => State<S>.Unwrap(state)(s);
 }
@@ -131,10 +133,16 @@ public static class State
 // s -> (s, a)
 // s -> (r, a)
 
-// state s a
-//    get :: f a
-//    put :: s -> f a
-//    run :: (s, f a) -> a
+
+
+
 interface ISem2<TI1, TO1, TI2, TO2>
+{
+}
+
+// indexed state 
+// operations lookup :: state<k, t> -> key -> t
+//            update :: state<k, t> -> key -> t -> state<k, t>
+interface IIndexedState<F, TKey>
 {
 }

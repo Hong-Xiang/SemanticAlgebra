@@ -1,25 +1,26 @@
 using SemanticAlgebra.Control;
 using SemanticAlgebra.Data;
+using SemanticAlgebra.Syntax;
+using SemanticAlgebra.Control;
 
 namespace SemanticAlgebra.Free;
 
-public abstract class Free<F> : IMonad<Free<F>>
+public abstract partial class Free<F> : IMonad<Free<F>>
     where F : IFunctor<F>
 {
+    [Semantic1]
+    public interface IFreeSemantic<in TS, out TR>
+        : ISemantic1<Free<F>, TS, TR>
+    {
+        TR Pure(TS p);
+        TR Roll(IS<F, IS<Free<F>, TS>> v);
+    }
+
     public static ISemantic1<Free<F>, Func<TS, TR>, ISemantic1<Free<F>, TS, IS<Free<F>, TR>>> ApplyS<TS, TR>()
     {
         throw new NotImplementedException();
     }
 
-    public static ISemantic1<Free<F>, TS, TR> Compose<TS, TI, TR>(ISemantic1<Free<F>, TS, TI> s, Func<TI, TR> f)
-    {
-        throw new NotImplementedException();
-    }
-
-    public static ISemantic1<Free<F>, T, IS<Free<F>, T>> Id<T>()
-    {
-        throw new NotImplementedException();
-    }
 
     public static ISemantic1<Free<F>, IS<Free<F>, T>, IS<Free<F>, T>> JoinS<T>()
     {
@@ -32,17 +33,7 @@ public abstract class Free<F> : IMonad<Free<F>>
     }
 
     public static IS<Free<F>, T> Pure<T>(T x)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-public interface IFreeSemantic<F, in TI, out TO>
-    : ISemantic1<Free<F>, TI, TO>
-    where F : IFunctor<F>
-{
-    TO Pure(TI p);
-    TO Roll(IS<F, IS<Free<F>, TI>> v);
+        => B.Pure(x);
 }
 
 

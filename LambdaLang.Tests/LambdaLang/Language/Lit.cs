@@ -1,5 +1,6 @@
 using SemanticAlgebra.Data;
 using SemanticAlgebra;
+using SemanticAlgebra.Control;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
 
@@ -59,8 +60,9 @@ public sealed class LitShowFolder : ILitSemantic<string, string>
         => $"{value}";
 }
 
-public sealed class LitEvalFolder : ILitSemantic<SigEvalData, SigEvalData>
+public sealed class LitEvalFolder<M> : ILitSemantic<IS<M, ISigValue>, IS<M, ISigValue>>
+    where M : IMonad<M>
 {
-    public SigEvalData LitI(int value)
-        => SigEvalState.From(s => (s, new SigInt(value)));
+    public IS<M, ISigValue> LitI(int value)
+        => M.Pure(new SigInt(value));
 }

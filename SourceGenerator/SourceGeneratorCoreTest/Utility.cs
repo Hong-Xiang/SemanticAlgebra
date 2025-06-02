@@ -19,6 +19,27 @@ public sealed class SemanticKind1BrandAttribute : Attribute
     public static IEnumerable<GeneratedSourceResult> GeneratedSources(this GeneratorDriverRunResult? result)
         => result is null ? [] : result.Results.SelectMany(r => r.GeneratedSources);
 
+    public static readonly string State2BrandCode = 
+        
+"""
+using SemanticAlgebra.Control;
+using SemanticAlgebra.Syntax;
+
+namespace SemanticAlgebra.State;
+
+public sealed partial class State
+    : IMonad<State>
+{
+    [Semantic1]
+    public interface ISemantic<in TS, out TR>
+        : ISemantic1<State, TS, TR>
+    {
+        TR None();
+        TR Some(TS value);
+    }
+}
+""";
+
     public static readonly string OptionBrandCode = """
 using SemanticAlgebra.Control;
 using SemanticAlgebra.Syntax;

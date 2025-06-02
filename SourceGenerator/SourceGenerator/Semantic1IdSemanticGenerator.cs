@@ -37,11 +37,12 @@ internal sealed class Semantic1IdSemanticGenerator(
 
     public MethodDeclarationSyntax GenerateSemanticUsageBrandMethod()
     {
+        var k1s = Definition.BrandSymbol.AllInterfaces.Single(x => x.Name == "IKind1");
         return MethodDeclaration(
                    Definition.AbstractSemanticName(
                        Definition.TSName, Definition.ExpressionSyntax()), BrandMethodName)
-               .AddModifiers(Token(SyntaxKind.PublicKeyword),
-                   Token(SyntaxKind.StaticKeyword))
+               .AddModifiers(Token(SyntaxKind.StaticKeyword))
+               .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(k1s.ToReferenceName()))
                .AddTypeParameterListParameters(TypeParameter(Definition.TSName.Identifier))
                .WithExpressionBody(
                    ArrowExpressionClause(
@@ -56,7 +57,7 @@ internal sealed class Semantic1IdSemanticGenerator(
     }
 
     public bool ShouldGenerateSemanticUsageBrandMethod()
-        => Definition.BrandSymbol.MemberNames.All(n => n != "Id");
+        => Definition.BrandSymbol.MemberNames.All(n => n != BrandMethodName);
 
     MethodDeclarationSyntax IdSemanticMethodSyntax(IMethodSymbol symbol)
     {

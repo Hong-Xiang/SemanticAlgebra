@@ -3,6 +3,9 @@ using SemanticAlgebra.Data;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
 
+
+
+
 public interface Sig
     : IFunctor<Sig>
     , Lit, Arith, Lam, App, Bind
@@ -47,7 +50,7 @@ public interface ISigSemantic<in TI, out TO>
     , IArithSemantic<TI, TO>
     , ILamSemantic<TI, TO>
     , IAppSemantic<TI, TO>
-    , IBindSemantic<TI, TO>
+    , Bind.ISemantic<TI, TO>
 {
 }
 
@@ -62,7 +65,7 @@ public sealed class SigSemantic<TS, TR>(
     IArithSemantic<TS, TR> Arith,
     ILamSemantic<TS, TR> Lam,
     IAppSemantic<TS, TR> App,
-    IBindSemantic<TS, TR> Bind
+    Bind.ISemantic<TS, TR> Bind
 ) : ISigSemantic<TS, TR>
 {
     public TR LitI(int value) => Lit.LitI(value);

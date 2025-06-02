@@ -14,7 +14,7 @@ public sealed record class Fix<F>(IS<F, Fix<F>> Unfix)
         => Fold(new Folder<F, Identity, T>(
             new DistributeFunctorIdentity<F>(),
             // folder.DiMap<F, IS<Identity, T>, T, T, T>(Identity.Unwrap, Prelude.Id)
-            folder.CoMap<F, IS<Identity, T>, T, T>(Identity.Unwrap)
+            folder.CoMap<F, IS<Identity, T>, T, T>(static e => e.Extract())
         ));
 
     public static ISemantic1<F, Fix<F>, Fix<F>> SyntaxFactory =>
@@ -28,6 +28,9 @@ public static class FixExtension
         => new(e);
 }
 
+// given forall a. f w a -> w f a
+//   and f w t -> t
+// fold :: fix f -> t
 public sealed record class Folder<F, W, T>(
     IDistributive<F, W> Distribute,
     ISemantic1<F, IS<W, T>, T> Semantic

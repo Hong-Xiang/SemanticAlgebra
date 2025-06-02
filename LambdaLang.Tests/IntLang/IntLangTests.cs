@@ -19,5 +19,6 @@ public class IntLangTests(ITestOutputHelper Output)
         
         // Assert
         Assert.Equal(80, fv);
+        Output.WriteLine(sf.ToString());
     }
 }

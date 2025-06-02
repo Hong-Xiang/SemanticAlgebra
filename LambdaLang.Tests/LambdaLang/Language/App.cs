@@ -1,4 +1,5 @@
 using SemanticAlgebra;
+using SemanticAlgebra.Control;
 using SemanticAlgebra.Data;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
@@ -21,7 +22,6 @@ public interface IAppSemantic<in TS, out TR> : ISemantic1<App, TS, TR>
 {
     TR Apply(TS f, TS x);
 }
-
 
 static class AppExtension
 {
@@ -60,21 +60,16 @@ public sealed class AppShowFolder : IAppSemantic<string, string>
         => $"{f}({x})";
 }
 
-public sealed class AppEvalFolder : IAppSemantic<SigEvalData, SigEvalData>
+public sealed class AppEvalFolder<M> : IAppSemantic<IS<M, ISigValue>, IS<M, ISigValue>>
+    where M : IMonad<M>
 {
-    public SigEvalData Apply(SigEvalData f, SigEvalData x)
-    {
-        return SigEvalState.From(s =>
-        {
-            var fr = f.Run(s);
-            var xr = x.Run(fr.State);
-            return (fr.Data, xr.Data) switch
-            {
-                (SigLam func, ISigValue arg) => (xr.State, func.F(arg)),
-                _ => throw new InvalidOperationException("Function application requires a function and an integer argument")
-            };
-        });
-    }
-
+    public IS<M, ISigValue> Apply(IS<M, ISigValue> f, IS<M, ISigValue> x)
+        => from f_ in f
+           from x_ in x
+           select f_ switch
+           {
+               SigLam func => func.F(x_),
+               _ => throw new InvalidOperationException(
+                   "Function application requires a function and an integer argument")
+           };
 }
-

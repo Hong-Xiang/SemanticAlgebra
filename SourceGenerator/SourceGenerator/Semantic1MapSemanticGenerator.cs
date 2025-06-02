@@ -60,11 +60,12 @@ internal sealed class Semantic1MapSemanticGenerator : ISemanticImplementationGen
 
     public MethodDeclarationSyntax GenerateSemanticUsageBrandMethod()
     {
+        var k1s = Definition.BrandSymbol.AllInterfaces.Single(x => x.Name == "IFunctor");
         return MethodDeclaration(
                    ImplementationMethod.ReturnType.ToReferenceName(),
                    BrandMethodName)
-               .AddModifiers(Token(SyntaxKind.PublicKeyword),
-                   Token(SyntaxKind.StaticKeyword))
+               .AddModifiers(Token(SyntaxKind.StaticKeyword))
+               .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(k1s.ToReferenceName()))
                .AddTypeParameterListParameters(TypeParameters)
                .AddParameterListParameters(F)
                .WithExpressionBody(
@@ -85,7 +86,7 @@ internal sealed class Semantic1MapSemanticGenerator : ISemanticImplementationGen
     public bool ShouldGenerateSemanticUsageBrandMethod()
         => Definition.BrandSymbol.AllInterfaces.Any(
             t => t.Name == "IFunctor"
-        ) && Definition.BrandSymbol.MemberNames.All(n => n != "MapS");
+        ) && Definition.BrandSymbol.MemberNames.All(n => n != BrandMethodName);
 
     MethodDeclarationSyntax MethodDefinitionSyntax(IMethodSymbol symbol)
     {
