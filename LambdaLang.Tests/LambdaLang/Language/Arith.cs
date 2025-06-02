@@ -1,4 +1,5 @@
 ﻿using SemanticAlgebra;
+using SemanticAlgebra.Control;
 using SemanticAlgebra.Data;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
@@ -80,9 +81,10 @@ public sealed class ArithShowFolder : IArithSemantic<string, string>
         => $"({l} * {r})";
 }
 
-public sealed class ArithEvalFolder : IArithSemantic<SigEvalData, SigEvalData>
+public sealed class ArithEvalFolder<M> : IArithSemantic<IS<M, ISigValue>, IS<M, ISigValue>>
+    where M : IMonad<M>
 {
-    public SigEvalData Add(SigEvalData l, SigEvalData r)
+    public IS<M, ISigValue> Add(IS<M, ISigValue> l, IS<M, ISigValue> r)
         => from l_ in l
            from r_ in r
            select (l_, r_) switch
@@ -91,7 +93,7 @@ public sealed class ArithEvalFolder : IArithSemantic<SigEvalData, SigEvalData>
                _ => throw new InvalidOperationException("Addition requires two integers")
            };
 
-    public SigEvalData Mul(SigEvalData l, SigEvalData r)
+    public IS<M, ISigValue> Mul(IS<M, ISigValue> l, IS<M, ISigValue> r)
         => from l_ in l
            from r_ in r
            select (l_, r_) switch

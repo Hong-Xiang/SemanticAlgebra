@@ -27,9 +27,10 @@ public static class Kind1K<TF>
 {
     public static ISemantic1<TF, T, IS<TF, T>> Id<T>() => TF.Id<T>();
     public static ISemantic1<TF, TS, TR> Semantic<TS, TR>(Func<IS<TF, TS>, TR> f) => TF.Semantic(f);
+
     public static ISemantic1<TF, TS, TR> Compose<TS, TI, TR>(
-            ISemantic1<TF, TS, TI> s,
-            Func<TI, TR> f) => TF.Compose(s, f);
+        ISemantic1<TF, TS, TI> s,
+        Func<TI, TR> f) => TF.Compose(s, f);
 
 
     //public static ICoSemantic1<TF, TS, TR> CoSemantic<TS, TR>(Func<TS, IS<TF, TR>> f) => TF.CoSemantic(f);
@@ -92,8 +93,4 @@ public static class Kind1Extension
     //    ISemantic1<TF, TM, TR> g)
     //    where TF : IKind1<TF>
     //    => TF.Semantic<TS, TR>(fs => f.CoEvaluate(fs, g));
-}
-
-public interface IKind2<TF> where TF : IKind2<TF>
-{
 }
