@@ -162,9 +162,12 @@ public record class Semantic1Definition(
                     Token(SyntaxKind.StaticKeyword))
                 .AddMembers(
                     [
-                        ..ConcreteSemanticSymbol.GetMembers()
-                                                .OfType<IMethodSymbol>()
-                                                .Select(CarrierDefinitionSyntax)
+                        ..ConcreteSemanticSymbol
+                          // .AllInterfaces
+                          // .SelectMany(t => t.GetMembers())
+                          .GetMembers()
+                          .OfType<IMethodSymbol>()
+                          .Select(CarrierDefinitionSyntax)
                     ]
                 )
         );
@@ -223,9 +226,12 @@ public record class Semantic1Definition(
                     Token(SyntaxKind.StaticKeyword))
                 .AddMembers(
                     [
-                        ..ConcreteSemanticSymbol.GetMembers()
-                                                .OfType<IMethodSymbol>()
-                                                .Select(CarrierBuilderSyntax)
+                        ..ConcreteSemanticSymbol
+                          // .AllInterfaces
+                          // .SelectMany(t => t.GetMembers())
+                          .GetMembers()
+                          .OfType<IMethodSymbol>()
+                          .Select(CarrierBuilderSyntax)
                     ]
                 )
         );

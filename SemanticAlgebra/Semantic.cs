@@ -11,6 +11,7 @@ public interface ISemantic1<out TF, in TS, out TR>
 {
 }
 
+// natural morphism could be encoded as f ~> g = forall a. b. sem f a b -> sem g a b
 // forall r. semantic<f, s, r> -> r ~ f s
 // f (g a)
 // ~ forall r1. sem<f, g a, r1>
