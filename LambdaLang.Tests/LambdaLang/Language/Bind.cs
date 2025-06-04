@@ -1,6 +1,7 @@
 using SemanticAlgebra;
 using SemanticAlgebra.Control;
 using SemanticAlgebra.Data;
+using SemanticAlgebra.Fix;
 using SemanticAlgebra.Syntax;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
@@ -32,17 +33,6 @@ public sealed class BindShowFolder : Bind.ISemantic<string, string>
         => $"(let {name.Name} = {expr} in {body})";
 }
 
-public sealed class BindEvalFolder : Bind.ISemantic<SigEvalData, SigEvalData>
-{
-    public SigEvalData Let(Identifier name, SigEvalData expr, SigEvalData body)
-        => SigEvalState.From(s =>
-        {
-            var e = expr.Run(s);
-            var s2 = s.Add(name, e.Data);
-            var br = body.Run(s2);
-            return (br.State, br.Data);
-        });
-}
 
 // static class BindExtension
 // {

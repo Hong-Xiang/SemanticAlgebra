@@ -1,10 +1,9 @@
 ﻿using SemanticAlgebra;
+using SemanticAlgebra.Control;
 using SemanticAlgebra.Data;
+using SemanticAlgebra.Fix;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
-
-
-
 
 public interface Sig
     : IFunctor<Sig>
@@ -21,27 +20,26 @@ public interface Sig
 
     static ISemantic1<Sig, TS, TR> IKind1<Sig>.Compose<TS, TI, TR>(ISemantic1<Sig, TS, TI> s, Func<TI, TR> f)
         => SigSemantic(Kind1K<Lit>.Compose(s, f),
-                       Kind1K<Arith>.Compose(s, f),
-                       Kind1K<Lam>.Compose(s, f),
-                       Kind1K<App>.Compose(s, f),
-                       Kind1K<Bind>.Compose(s, f));
+            Kind1K<Arith>.Compose(s, f),
+            Kind1K<Lam>.Compose(s, f),
+            Kind1K<App>.Compose(s, f),
+            Kind1K<Bind>.Compose(s, f));
 
     static ISemantic1<Sig, T, IS<Sig, T>> IKind1<Sig>.Id<T>()
         => SigSemantic<T, IS<Sig, T>>(
-                       Kind1K<Lit>.Id<T>(),
-                       Kind1K<Arith>.Id<T>(),
-                       Kind1K<Lam>.Id<T>(),
-                       Kind1K<App>.Id<T>(),
-                       Kind1K<Bind>.Id<T>()
-                       );
+            Kind1K<Lit>.Id<T>(),
+            Kind1K<Arith>.Id<T>(),
+            Kind1K<Lam>.Id<T>(),
+            Kind1K<App>.Id<T>(),
+            Kind1K<Bind>.Id<T>()
+        );
 
     static ISemantic1<Sig, TS, IS<Sig, TR>> IFunctor<Sig>.MapS<TS, TR>(Func<TS, TR> f)
         => SigSemantic<TS, IS<Sig, TR>>(FunctorK<Lit>.MapS(f).Prj(),
-                                        FunctorK<Arith>.MapS(f).Prj(),
-                                        FunctorK<Lam>.MapS(f).Prj(),
-                                        FunctorK<App>.MapS(f).Prj(),
-                                        FunctorK<Bind>.MapS(f).Prj());
-
+            FunctorK<Arith>.MapS(f).Prj(),
+            FunctorK<Lam>.MapS(f).Prj(),
+            FunctorK<App>.MapS(f).Prj(),
+            FunctorK<Bind>.MapS(f).Prj());
 }
 
 public interface ISigSemantic<in TI, out TO>
@@ -69,8 +67,10 @@ public sealed class SigSemantic<TS, TR>(
 ) : ISigSemantic<TS, TR>
 {
     public TR LitI(int value) => Lit.LitI(value);
+
     public TR Add(TS l, TS r)
         => Arith.Add(l, r);
+
     public TR Mul(TS l, TS r)
         => Arith.Mul(l, r);
 
@@ -87,10 +87,40 @@ public sealed class SigSemantic<TS, TR>(
         => Bind.Let(name, expr, body);
 }
 
+public sealed class BindLoweringFolder
+    : ISigSemantic<Fix<SCore>, Fix<SCore>>
+{
+    public Fix<SCore> LitI(int value)
+        => Lit.LitI<Fix<SCore>>(value).Fix();
+
+    public Fix<SCore> Add(Fix<SCore> l, Fix<SCore> r)
+        => Arith.Add(l, r).Fix();
+
+    public Fix<SCore> Mul(Fix<SCore> l, Fix<SCore> r)
+        => Arith.Mul(l, r).Fix();
+
+    public Fix<SCore> Lambda(Identifier name, Fix<SCore> expr)
+        => Lam.Lambda(name, expr).Fix();
+
+    public Fix<SCore> Var(Identifier name)
+        => Lam.Var<Fix<SCore>>(name).Fix();
+
+    public Fix<SCore> Apply(Fix<SCore> f, Fix<SCore> x)
+        => App.Apply(f, x).Fix();
+
+    public Fix<SCore> Let(Identifier name, Fix<SCore> expr, Fix<SCore> body)
+        => Apply(Lambda(name, expr), body);
+}
+
 public interface ISigValue
 {
 }
+
 public sealed record SigInt(int Value) : ISigValue
 {
 }
-public sealed record SigLam(Func<ISigValue, ISigValue> F) : ISigValue { }
+
+public sealed record SigLam<M>(Func<ISigValue, IS<M, ISigValue>> F) : ISigValue
+    where M : IMonadKState<M, Identifier, ISigValue>
+{
+}

@@ -2,21 +2,6 @@ using SemanticAlgebra.Control;
 
 namespace SemanticAlgebra.Data;
 
-// state f a b
-//    get :: f a b
-//    put :: a -> f a b
-
-// valid impl :
-//  f a b = f s s = m s
-
-//    run :: (s, f a) -> a
-public interface IMonadState<M, S> : IMonad<M>
-    where M : IMonad<M>
-{
-    static abstract IS<M, S> Get();
-    static abstract IS<M, Unit> Put(S value);
-}
-
 public abstract class StateT<M, S> : IMonadState<StateT<M, S>, S>
     where M : IMonad<M>
 {
@@ -34,24 +19,12 @@ public abstract class StateT<M, S> : IMonadState<StateT<M, S>, S>
         => Alias1.Compose<StateT<M, S>, TS, TI, TR, Func<S, (TS, S)>>(s, f);
 
     public static ISemantic1<StateT<M, S>, TS, IS<StateT<M, S>, TR>> MapS<TS, TR>(Func<TS, TR> f)
-        => Id<TS>().Compose(fs =>
+        => Id<TS>().Compose(fs => B.From<TR>(s =>
         {
-            var fsv = fs.Unwrap();
-            return B.From<TR>(s =>
-            {
-                var (value, state) = fsv(s);
-                return (f(value), state);
-            });
-        });
+            var (value, state) = fs.Unwrap()(s);
+            return (f(value), state);
+        }));
 
-    // public static ISemantic1<StateT<M, S>, Func<TS, TR>, ISemantic1<StateT<M, S>, TS, IS<StateT<M, S>, TR>>> ApplyS<TS,
-    //     TR>()
-    //     => Id<Func<TS, TR>>().Compose(fsr =>
-    //         Kind1K<StateT<M, S>>.Semantic<TS, IS<StateT<M, S>, TR>>(fs =>
-    //             from func in fsr
-    //             from s in fs
-    //             select func(s)
-    //         ));
 
     public static IS<StateT<M, S>, T> Pure<T>(T x)
         => B.From<T>(s => (x, s));

@@ -129,20 +129,3 @@ public static class State
     public static State<S>.IStateResult<T> Run<S, T>(this IS<State<S>, T> state, S s)
         => State<S>.Unwrap(state)(s);
 }
-
-// s -> (s, a)
-// s -> (r, a)
-
-
-
-
-interface ISem2<TI1, TO1, TI2, TO2>
-{
-}
-
-// indexed state 
-// operations lookup :: state<k, t> -> key -> t
-//            update :: state<k, t> -> key -> t -> state<k, t>
-interface IIndexedState<F, TKey>
-{
-}

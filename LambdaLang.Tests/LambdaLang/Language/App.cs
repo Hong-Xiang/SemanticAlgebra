@@ -61,15 +61,16 @@ public sealed class AppShowFolder : IAppSemantic<string, string>
 }
 
 public sealed class AppEvalFolder<M> : IAppSemantic<IS<M, ISigValue>, IS<M, ISigValue>>
-    where M : IMonad<M>
+    where M : IMonadKState<M, Identifier, ISigValue>
 {
     public IS<M, ISigValue> Apply(IS<M, ISigValue> f, IS<M, ISigValue> x)
         => from f_ in f
            from x_ in x
-           select f_ switch
+           from r in f_ switch
            {
-               SigLam func => func.F(x_),
+               SigLam<M> func => func.F(x_),
                _ => throw new InvalidOperationException(
                    "Function application requires a function and an integer argument")
-           };
+           }
+           select r;
 }

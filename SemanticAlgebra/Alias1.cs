@@ -23,7 +23,10 @@ public static class Alias1
             where F : IKind1<F>
         {
             public TR Evaluate<TR>(ISemantic1<F, T, TR> semantic)
-                => ((Alias1.ISemantic<F, T, TR, TV>)semantic).From(Value);
+            {
+                var sem = (Alias1.ISemantic<F, T, TR, TV>)semantic;
+                return sem.From(Value);
+            }
         }
     }
 

@@ -49,7 +49,6 @@ sealed record class Lambda<T>(Identifier Name, T Expr)
         => semantic.Prj().Lambda(Name, Expr);
 }
 
-
 public sealed class LamComposeSemantic<TS, TI, TR>(ILamSemantic<TS, TI> S, Func<TI, TR> F) : ILamSemantic<TS, TR>
 {
     public TR Lambda(Identifier name, TS expr)
@@ -67,8 +66,6 @@ public sealed class LamIdSemantic<T>() : ILamSemantic<T, IS<Lam, T>>
     public IS<Lam, T> Var(Identifier name)
         => Lam.Var<T>(name);
 }
-
-
 
 public sealed class LamMapSemantic<TS, TR>(Func<TS, TR> F) : ILamSemantic<TS, IS<Lam, TR>>
 {
@@ -88,20 +85,19 @@ public sealed class LamShowFolder : ILamSemantic<string, string>
         => name.Name;
 }
 
-public sealed class LamEvalFolder : ILamSemantic<SigEvalData, SigEvalData>
+public sealed class LamEvalFolder<M> : ILamSemantic<IS<M, ISigValue>, IS<M, ISigValue>>
+    where M : IMonadKState<M, Identifier, ISigValue>
 {
-    public SigEvalData Lambda(Identifier name, SigEvalData expr)
-    {
-        return SigEvalState.From(s =>
+    public IS<M, ISigValue> Lambda(Identifier name, IS<M, ISigValue> expr)
+        => M.Pure(new SigLam<M>(val =>
         {
-            return (s, new SigLam(val =>
-            {
-                var s_ = s.Add(name, val);
-                var r = expr.Run(s_);
-                return r.Data;
-            }));
-        });
-    }
+            return from _ in M.Put(name, val)
+                   from r in expr
+                   select r;
+        }));
 
-    public SigEvalData Var(Identifier name) => SigEvalState.From(s => (s, s[name]));
+    IS<M, ISigValue> ILamSemantic<IS<M, ISigValue>, IS<M, ISigValue>>.Var(Identifier name)
+        => M.Get(name);
+
+    // public SigEvalData Var(Identifier name) => SigEvalState.From(s => (s, s[name]));
 }

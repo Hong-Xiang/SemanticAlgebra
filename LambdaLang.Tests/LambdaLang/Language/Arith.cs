@@ -89,7 +89,7 @@ public sealed class ArithEvalFolder<M> : IArithSemantic<IS<M, ISigValue>, IS<M, 
            from r_ in r
            select (l_, r_) switch
            {
-               (SigInt left, SigInt right) => new SigInt(left.Value + right.Value),
+               (SigInt left, SigInt right) => (ISigValue)new SigInt(left.Value + right.Value),
                _ => throw new InvalidOperationException("Addition requires two integers")
            };
 
@@ -98,7 +98,7 @@ public sealed class ArithEvalFolder<M> : IArithSemantic<IS<M, ISigValue>, IS<M, 
            from r_ in r
            select (l_, r_) switch
            {
-               (SigInt left, SigInt right) => new SigInt(left.Value * right.Value),
+               (SigInt left, SigInt right) => (ISigValue)new SigInt(left.Value * right.Value),
                _ => throw new InvalidOperationException("Addition requires two integers")
            };
 }

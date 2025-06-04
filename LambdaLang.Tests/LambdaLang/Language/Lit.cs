@@ -64,5 +64,5 @@ public sealed class LitEvalFolder<M> : ILitSemantic<IS<M, ISigValue>, IS<M, ISig
     where M : IMonad<M>
 {
     public IS<M, ISigValue> LitI(int value)
-        => M.Pure(new SigInt(value));
+        => M.Pure<ISigValue>(new SigInt(value));
 }
