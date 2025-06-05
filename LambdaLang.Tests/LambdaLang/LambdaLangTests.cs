@@ -97,12 +97,12 @@ public class LambdaLangTests
         // Arrange & Act
         var expr = BuildLambdaExpression();
 
-        // var el = expr.Fold<Fix<SCore>>(new BindLoweringFolder());
+        var el = expr.Fold<Fix<SCore>>(new BindLoweringFolder());
         var S2 =
             Fix<SCore>.SyntaxFactory.Prj();
         var x = new Identifier("x");
         var ef = S2.Lambda(x, S2.Var(x));
-        var el = S2.Apply(ef, S2.LitI(3));
+        // var el = S2.Apply(ef, S2.LitI(3));
         
 
 

@@ -89,7 +89,7 @@ public sealed class LamEvalFolder<M> : ILamSemantic<IS<M, ISigValue>, IS<M, ISig
     where M : IMonadKState<M, Identifier, ISigValue>
 {
     public IS<M, ISigValue> Lambda(Identifier name, IS<M, ISigValue> expr)
-        => M.Pure(new SigLam<M>(val =>
+        => M.Pure<ISigValue>(new SigLam<M>(val =>
         {
             return from _ in M.Put(name, val)
                    from r in expr
