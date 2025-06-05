@@ -1,4 +1,5 @@
-﻿using SemanticAlgebra.Data;
+﻿using System.Collections.Immutable;
+using SemanticAlgebra.Data;
 using SemanticAlgebra;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
@@ -86,18 +87,40 @@ public sealed class LamShowFolder : ILamSemantic<string, string>
 }
 
 public sealed class LamEvalFolder<M> : ILamSemantic<IS<M, ISigValue>, IS<M, ISigValue>>
-    where M : IMonadKState<M, Identifier, ISigValue>
+    where M : IMonadState<M, ImmutableDictionary<Identifier, ISigValue>>
 {
     public IS<M, ISigValue> Lambda(Identifier name, IS<M, ISigValue> expr)
         => M.Pure<ISigValue>(new SigLam<M>(val =>
         {
-            return from _ in M.Put(name, val)
-                   from r in expr
-                   select r;
+            // Get current state, set parameter, evaluate expression, restore state
+            var originalState = M.Get();
+            var r = from gC in originalState.SelectMany(gcv =>
+                    {
+                        Console.WriteLine(gcv);
+                        return M.Pure(gcv);
+                    })
+                    from sP in M.Put(gC.Add(name, val))
+                    from e in expr
+                    from s in originalState.SelectMany(osv =>
+                    {
+                        Console.WriteLine(osv);
+                        return M.Pure(gC);
+                    })
+                    // from _ in originalState.SelectMany(s => M.Put(s))
+                    from _ in M.Put(gC)
+                    select e;
+            return r;
+
+
+            // var getCurrentState = M.Get();
+            // var setParameter = getCurrentState.SelectMany(currentState => M.Put(currentState.Add(name, val)));
+            // var evaluateExpr = setParameter.SelectMany(_ => expr);
+            // var restoreState = evaluateExpr.SelectMany(result =>
+            //     getCurrentState.SelectMany(originalState =>
+            //         M.Put(originalState).Select(_ => result)));
+            // return restoreState;
         }));
 
     IS<M, ISigValue> ILamSemantic<IS<M, ISigValue>, IS<M, ISigValue>>.Var(Identifier name)
-        => M.Get(name);
-
-    // public SigEvalData Var(Identifier name) => SigEvalState.From(s => (s, s[name]));
+        => M.Get().Select(env => env.TryGetValue(name, out var val) ? val : throw new KeyNotFoundException(name.Name));
 }

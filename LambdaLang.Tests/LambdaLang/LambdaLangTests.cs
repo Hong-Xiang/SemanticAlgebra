@@ -3,11 +3,12 @@ using SemanticAlgebra.Fix;
 using System.Collections.Immutable;
 using LambdaLang.Tests.LambdaLang.Language;
 using SemanticAlgebra;
+using Xunit.Abstractions;
 
 namespace LambdaLang.Tests.LambdaLang;
 
 // encoding (ImmutableDictionary<Identifier, ISigValue> -> (ISigValue, ImmutableDictionary<Identifier, ISigValue>))
-using EvalS = StateT<EvalState, ImmutableDictionary<Identifier, ISigValue>>;
+using EvalS = StateT<Identity, ImmutableDictionary<Identifier, ISigValue>>;
 
 sealed class EvalState :
     IMonadKState<EvalState, Identifier, ISigValue>
@@ -71,7 +72,7 @@ static class EvalStateExtension
         >)e).Value;
 }
 
-public class LambdaLangTests
+public class LambdaLangTests(ITestOutputHelper Output)
 {
     [Fact]
     public void LambdaExpression_GeneratesStringRepresentation()
@@ -90,6 +91,74 @@ public class LambdaLangTests
         Assert.False(string.IsNullOrEmpty(show));
     }
 
+    [Fact]
+    public void LambdaExpressionEvalId()
+    {
+        var S = Fix<SCore>.SyntaxFactory.Prj();
+        var x = new Identifier("x");
+        var id = S.Lambda(x, S.Var(x));
+        var e = S.Apply(id, S.LitI(42));
+        var r = e.Fold<IS<EvalS, ISigValue>>(EvalFolder);
+        var (rv, _) = r.Unwrap()(ImmutableDictionary<Identifier, ISigValue>.Empty);
+        Assert.Equal(42, Assert.IsType<SigInt>(rv).Value);
+    }
+
+    [Fact]
+    public void LambdaExpressionEvalAdd1()
+    {
+        var S = Fix<SCore>.SyntaxFactory.Prj();
+        var x2 = new Identifier("x2");
+        var add1 = S.Lambda(x2, S.Add(S.LitI(1), S.Var(x2)));
+
+        var e = S.Apply(add1, S.LitI(41));
+        var r = e.Fold<IS<EvalS, ISigValue>>(EvalFolder);
+        var (rv, _) = r.Unwrap()(ImmutableDictionary<Identifier, ISigValue>.Empty);
+        Assert.Equal(42, Assert.IsType<SigInt>(rv).Value);
+    }
+
+    [Fact]
+    public void LambdaExpressionEvalZAdd1()
+    {
+        var S = Fix<SCore>.SyntaxFactory.Prj();
+        var x = new Identifier("x");
+        var id = S.Lambda(x, S.Var(x));
+        var x2 = new Identifier("x2");
+        var add1 = S.Lambda(x2, S.Add(S.LitI(1), S.Var(x2)));
+        var f = new Identifier("f");
+
+        var z = S.Lambda(f, id);
+        var e = S.Apply(S.Apply(z, add1), S.LitI(42));
+        var r = e.Fold<IS<EvalS, ISigValue>>(EvalFolder);
+        var (rv, _) = r.Unwrap()(ImmutableDictionary<Identifier, ISigValue>.Empty);
+        Assert.Equal(42, Assert.IsType<SigInt>(rv).Value);
+    }
+
+
+    [Fact]
+    public void LambdaExpressionEvalSimpleApp()
+    {
+        var S = Fix<SCore>.SyntaxFactory.Prj();
+        var x = new Identifier("x");
+        var id = S.Lambda(x, S.Var(x));
+        var f2 = new Identifier("f2");
+        var x3 = new Identifier("x3");
+        var app = S.Lambda(f2, S.Lambda(x3, S.Apply(S.Var(f2), S.Var(x3))));
+        var e0 = S.Apply(app, id);
+        var r0 = e0.Fold<IS<EvalS, ISigValue>>(EvalFolder);
+        
+        var e = S.Apply(S.Apply(app, id), S.LitI(42));
+        Output.WriteLine(e.Show());
+        var r = e.Fold<IS<EvalS, ISigValue>>(EvalFolder);
+        var (rv, _) = r.Unwrap()(ImmutableDictionary<Identifier, ISigValue>.Empty);
+        Assert.Equal(42, Assert.IsType<SigInt>(rv).Value);
+    }
+
+    private SCore.ISemantic<IS<EvalS, ISigValue>, IS<EvalS, ISigValue>> EvalFolder
+        => SCore.ComposeSemantic(
+            new LitEvalFolder<EvalS>(),
+            new ArithEvalFolder<EvalS>(),
+            new LamEvalFolder<EvalS>(),
+            new AppEvalFolder<EvalS>());
 
     [Fact]
     public void LambdaExpression_EvaluatesTo44()
@@ -103,14 +172,9 @@ public class LambdaLangTests
         var x = new Identifier("x");
         var ef = S2.Lambda(x, S2.Var(x));
         // var el = S2.Apply(ef, S2.LitI(3));
-        
 
 
-        var vals = el.Fold<IS<EvalState, ISigValue>>(SCore.ComposeSemantic(
-            new LitEvalFolder<EvalState>(),
-            new ArithEvalFolder<EvalState>(),
-            new LamEvalFolder<EvalState>(),
-            new AppEvalFolder<EvalState>()));
+        var vals = el.Fold<IS<EvalS, ISigValue>>(EvalFolder);
 
         var (valr, _) = vals.Unwrap()(ImmutableDictionary<Identifier, ISigValue>.Empty);
         var result = ((SigInt)valr).Value;
@@ -134,12 +198,14 @@ public class LambdaLangTests
         var f2 = new Identifier("f2");
         var n = new Identifier("n");
         var x3 = new Identifier("x3");
-        var succ = S.Lambda(n, S.Lambda(f2, S.Lambda(x3,
-            S.Apply(S.Var(f2),
-                S.Apply(
-                    S.Apply(S.Var(n), S.Var(f2)),
-                    S.Var(x3)))
-        )));
+        var succ = S.Lambda(n,
+            S.Lambda(f2,
+                S.Lambda(x3,
+                    S.Apply(S.Var(f2),
+                        S.Apply(
+                            S.Apply(S.Var(n), S.Var(f2)),
+                            S.Var(x3)))
+                )));
 
         var c1 = S.Apply(succ, z);
         var c2 = S.Apply(succ, c1);

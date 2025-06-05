@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using SemanticAlgebra;
 using SemanticAlgebra.Control;
 using SemanticAlgebra.Data;
@@ -61,10 +62,11 @@ public sealed class AppShowFolder : IAppSemantic<string, string>
 }
 
 public sealed class AppEvalFolder<M> : IAppSemantic<IS<M, ISigValue>, IS<M, ISigValue>>
-    where M : IMonadKState<M, Identifier, ISigValue>
+    where M : IMonadState<M, ImmutableDictionary<Identifier, ISigValue>>
 {
     public IS<M, ISigValue> Apply(IS<M, ISigValue> f, IS<M, ISigValue> x)
-        => from f_ in f
+        => from s in M.Get()
+           from f_ in f
            from x_ in x
            from r in f_ switch
            {

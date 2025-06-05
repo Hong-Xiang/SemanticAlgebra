@@ -1,4 +1,5 @@
-﻿using SemanticAlgebra;
+﻿using System.Collections.Immutable;
+using SemanticAlgebra;
 using SemanticAlgebra.Control;
 using SemanticAlgebra.Data;
 using SemanticAlgebra.Fix;
@@ -120,7 +121,16 @@ public sealed record SigInt(int Value) : ISigValue
 {
 }
 
+public sealed record SigClosure<M>(
+    Identifier Name,
+    ImmutableDictionary<Identifier, ISigValue> Env,
+    IS<M, ISigValue> Body
+) : ISigValue
+    where M : IMonadState<M, ImmutableDictionary<Identifier, ISigValue>>
+{
+}
+
 public sealed record SigLam<M>(Func<ISigValue, IS<M, ISigValue>> F) : ISigValue
-    where M : IMonadKState<M, Identifier, ISigValue>
+    where M : IMonadState<M, ImmutableDictionary<Identifier, ISigValue>>
 {
 }

@@ -1,5 +1,6 @@
 ﻿using SemanticAlgebra;
 using SemanticAlgebra.Data;
+using SemanticAlgebra.Fix;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
 
@@ -51,6 +52,14 @@ public static class SCoreExtension
 {
     public static SCore.ISemantic<TS, TR> Prj<TS, TR>(this ISemantic1<SCore, TS, TR> s)
         => (SCore.ISemantic<TS, TR>)s;
+
+    public static string Show(this Fix<SCore> e)
+        => e.Fold<string>(SCore.ComposeSemantic(
+            new LitShowFolder(),
+            new ArithShowFolder(),
+            new LamShowFolder(),
+            new AppShowFolder()
+        ));
 }
 
 public sealed class SCoreSemantic<TS, TR>(
