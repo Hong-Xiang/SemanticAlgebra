@@ -122,9 +122,8 @@ public sealed record SigInt(int Value) : ISigValue
 }
 
 public sealed record SigClosure<M>(
-    Identifier Name,
     ImmutableDictionary<Identifier, ISigValue> Env,
-    IS<M, ISigValue> Body
+    Func<ISigValue, IS<M, ISigValue>> Body
 ) : ISigValue
     where M : IMonadState<M, ImmutableDictionary<Identifier, ISigValue>>
 {
