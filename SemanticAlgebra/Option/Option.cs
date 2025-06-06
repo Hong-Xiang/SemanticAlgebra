@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using SemanticAlgebra.Control;
+﻿using SemanticAlgebra.Control;
 using SemanticAlgebra.Syntax;
 
 namespace SemanticAlgebra.Option;

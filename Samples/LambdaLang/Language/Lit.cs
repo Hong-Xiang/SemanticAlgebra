@@ -62,5 +62,5 @@ sealed class LitShowFolder : ILitSemantic<string, string>
 sealed class LitEvalFolder : ILitSemantic<SigEvalData, SigEvalData>
 {
     public SigEvalData LitI(int value)
-        => SigEvalState.From(s => (s, new SigInt(value)));
+        => SigEvalState.From(s => (s, (ISigValue)new SigInt(value)));
 }

@@ -18,10 +18,10 @@ public static class DistributiveExtension
 {
 }
 
-public sealed class DistributeFunctorIdentity<F> : IDistributive<F, Identity>
-    where F : IFunctor<F>
+public sealed class DistributeFunctorIdentity<G> : IDistributive<G, Identity>
+    where G : IFunctor<G>
 {
-    public ISemantic1<F, IS<Identity, T>, IS<Identity, IS<F, T>>> Distribute<T>()
-        => Kind1K<F>.Semantic<IS<Identity, T>, IS<Identity, IS<F, T>>>(fit =>
+    public ISemantic1<G, IS<Identity, T>, IS<Identity, IS<G, T>>> Distribute<T>()
+        => Kind1K<G>.Semantic<IS<Identity, T>, IS<Identity, IS<G, T>>>(fit =>
             Identity.Pure(fit.Select(static e => e.Extract())));
 }

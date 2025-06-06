@@ -1,5 +1,7 @@
+using System.Collections.Immutable;
 using SemanticAlgebra.Data;
 using SemanticAlgebra;
+using SemanticAlgebra.Control;
 
 namespace LambdaLang.Language;
 
@@ -70,3 +72,4 @@ sealed class BindMapSemantic<TS, TR>(Func<TS, TR> F) : IBindSemantic<TS, IS<Bind
     public IS<Bind, TR> Let(Identifier name, TS expr, TS body)
         => Bind.Let(name, F(expr), F(body));
 }
+

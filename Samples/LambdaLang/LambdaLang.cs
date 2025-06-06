@@ -8,12 +8,9 @@ namespace LambdaLang;
 // target
 // e ::= \x.e | x | e1 e2 | n | e1 + e2 | let x = e1 in e2 | error
 
-
 // for binding, although the PHOAS style implementation is possible,
 // after investigation it would be hard to use it fluently in C#.
 // thus we are going to use first-order encoding for variable binding.
-
-
 
 sealed class Lambda<V> : IFunctor<Lambda<V>>
 {
@@ -35,12 +32,12 @@ interface ILambdaLang<TV, in TEI, out TEO>
     TEO Lam(Func<TV, TEI> body);
 }
 
-interface ILambdaPSemantic<in TI, out TO>
+interface ILambdaPSemantic<TI, TO>
 {
     TO Get(ITerm<TI> termV);
 }
 
-interface ITerm<out T>
+interface ITerm<T>
 {
     IS<Lambda<TV>, T> Get<TV>();
 }
@@ -164,6 +161,7 @@ sealed class VarC<T>(string Name) : IS<LambdaC, T>
     public TR Evaluate<TR>(ISemantic1<LambdaC, T, TR> semantic)
         => semantic.Prj().Var(Name);
 }
+
 sealed class LamC<T>(string V, T B) : IS<LambdaC, T>
 {
     public TR Evaluate<TR>(ISemantic1<LambdaC, T, TR> semantic)
@@ -182,6 +180,7 @@ interface ILambdaCSemantic<in TS, out TR> : ISemantic1<LambdaC, TS, TR>
     TR App(TS f, TS x);
     TR Lam(string v, TS b);
 }
+
 sealed class LambdaCIdSemantic<T> : ILambdaCSemantic<T, IS<LambdaC, T>>
 {
     public IS<LambdaC, T> App(T f, T x)

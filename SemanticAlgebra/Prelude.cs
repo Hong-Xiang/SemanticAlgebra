@@ -6,7 +6,9 @@ namespace SemanticAlgebra;
 public static class Prelude
 {
     public static T Id<T>(T x) => x;
-    public static Unit Unit => default;
+    public static Func<T> Const0<T>(T x) => () => x;
+    public static Func<TS, T> Const1<TS, T>(T x) => (_) => x;
+    public static Func<TA, TB, T> Const2<TA, TB, T>(T x) => (a, b) => x;
 
     public static Func<TA, Func<TB, TC>> Curry<TA, TB, TC>(this Func<TA, TB, TC> f) => a => b => f(a, b);
 

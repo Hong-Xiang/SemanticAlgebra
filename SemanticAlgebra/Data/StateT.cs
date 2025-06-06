@@ -2,7 +2,7 @@ using SemanticAlgebra.Control;
 
 namespace SemanticAlgebra.Data;
 
-public abstract class StateT<M, S> : IMonadState<StateT<M, S>, S>
+public abstract class StateT<M, S> : IMonadState<StateT<M, S>, S>, IMonadFix<StateT<M, S>>
     where M : IMonad<M>
 {
     public static class B
@@ -40,7 +40,30 @@ public abstract class StateT<M, S> : IMonadState<StateT<M, S>, S>
         => B.From(s => (s, s));
 
     public static IS<StateT<M, S>, Unit> Put(S value)
-        => B.From(_ => (Prelude.Unit, value));
+        => B.From(_ => (Unit.Default, value));
+
+    sealed class LazyCell<T>
+    {
+        public T? Value { get; set; } = default;
+    }
+
+    sealed class RecursiveFixValueNotEvaluatedException : Exception
+    {
+    }
+
+    public static IS<StateT<M, S>, T> Fix<T>(Func<Lazy<T>, IS<StateT<M, S>, T>> f)
+    {
+        var cell = new LazyCell<T>();
+        return Get().SelectMany(s =>
+        {
+            var v = new Lazy<T>(() => cell.Value ?? throw new RecursiveFixValueNotEvaluatedException());
+            return f(v);
+        }).Select(res =>
+        {
+            cell.Value = res;
+            return res;
+        });
+    }
 }
 
 public static partial class StateTExtension

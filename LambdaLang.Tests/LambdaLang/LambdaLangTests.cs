@@ -10,68 +10,6 @@ namespace LambdaLang.Tests.LambdaLang;
 // encoding (ImmutableDictionary<Identifier, ISigValue> -> (ISigValue, ImmutableDictionary<Identifier, ISigValue>))
 using EvalS = StateT<Identity, ImmutableDictionary<Identifier, ISigValue>>;
 
-sealed class EvalState :
-    IMonadKState<EvalState, Identifier, ISigValue>
-{
-    public static class B
-    {
-        public static IS<EvalState, T> From<T>(
-            Func<ImmutableDictionary<Identifier, ISigValue>,
-                    (T, ImmutableDictionary<Identifier, ISigValue>)>
-                value)
-            => Alias1.B.From<EvalState, T,
-                Func<ImmutableDictionary<Identifier, ISigValue>,
-                    (T, ImmutableDictionary<Identifier, ISigValue>)>>(value);
-    }
-
-    public static ISemantic1<EvalState, T, IS<EvalState, T>> Id<T>()
-        => Alias1.Id<EvalState, T,
-            Func<ImmutableDictionary<Identifier, ISigValue>,
-                (T, ImmutableDictionary<Identifier, ISigValue>)>
-        >();
-
-    public static ISemantic1<EvalState, TS, TR> Compose<TS, TI, TR>(ISemantic1<EvalState, TS, TI> s, Func<TI, TR> f)
-        => Alias1.Compose<EvalState, TS, TI, TR,
-                Func<ImmutableDictionary<Identifier, ISigValue>,
-                    (TS, ImmutableDictionary<Identifier, ISigValue>)>>
-            (s, f);
-
-    public static ISemantic1<EvalState, TS, IS<EvalState, TR>> MapS<TS, TR>(Func<TS, TR> f)
-        => Kind1K<EvalState>.Semantic<TS, IS<EvalState, TR>>(s => B.From(e =>
-        {
-            var (val, env) = s.Unwrap()(e);
-            return (f(val), env);
-        }));
-
-    public static IS<EvalState, T> Pure<T>(T x)
-        => B.From<T>(e => (x, e));
-
-    public static ISemantic1<EvalState, IS<EvalState, T>, IS<EvalState, T>> JoinS<T>()
-        => Kind1K<EvalState>.Semantic<IS<EvalState, T>, IS<EvalState, T>>(ms => B.From<T>(s =>
-            {
-                var (value, state) = ms.Unwrap()(s);
-                return value.Unwrap()(state);
-            })
-        );
-
-    public static IS<EvalState, ISigValue> Get(Identifier key)
-        => B.From<ISigValue>(e => (e[key], e));
-
-    public static IS<EvalState, Unit> Put(Identifier key, ISigValue value)
-        => B.From(e => (Prelude.Unit, e.Add(key, value)));
-}
-
-static class EvalStateExtension
-{
-    public static Func<ImmutableDictionary<Identifier, ISigValue>,
-        (T, ImmutableDictionary<Identifier, ISigValue>)> Unwrap<T>(this IS<EvalState, T> e)
-        => ((Alias1.D.From<
-            EvalState,
-            T,
-            Func<ImmutableDictionary<Identifier, ISigValue>, (T, ImmutableDictionary<Identifier, ISigValue>)>
-        >)e).Value;
-}
-
 public class LambdaLangTests(ITestOutputHelper Output)
 {
     [Fact]
@@ -145,7 +83,7 @@ public class LambdaLangTests(ITestOutputHelper Output)
         var app = S.Lambda(f2, S.Lambda(x3, S.Apply(S.Var(f2), S.Var(x3))));
         var e0 = S.Apply(app, id);
         var r0 = e0.Fold<IS<EvalS, ISigValue>>(EvalFolder);
-        
+
         var e = S.Apply(S.Apply(app, id), S.LitI(42));
         Output.WriteLine(e.Show());
         var r = e.Fold<IS<EvalS, ISigValue>>(EvalFolder);
@@ -154,11 +92,23 @@ public class LambdaLangTests(ITestOutputHelper Output)
     }
 
     private SCore.ISemantic<IS<EvalS, ISigValue>, IS<EvalS, ISigValue>> EvalFolder
-        => SCore.ComposeSemantic(
+        => SCore.MergeSemantic(
             new LitEvalFolder<EvalS>(),
             new ArithEvalFolder<EvalS>(),
             new LamEvalFolder<EvalS>(),
             new AppEvalFolder<EvalS>());
+
+
+    [Fact]
+    public void ISigValueStateTypeShouldWork()
+    {
+        // the following should be compiler error
+        // IS<EvalS, ISigValue> r = EvalS.Pure(new SigInt(10)); 
+
+        IS<EvalS, ISigValue> r = EvalS.Pure<ISigValue>(new SigInt(10));
+        var (v, _) = r.Unwrap()(ImmutableDictionary<Identifier, ISigValue>.Empty);
+        Assert.Equal(10, Assert.IsType<SigInt>(v).Value);
+    }
 
     [Fact]
     public void LambdaExpression_EvaluatesTo44()
@@ -181,6 +131,33 @@ public class LambdaLangTests(ITestOutputHelper Output)
 
         // Assert
         Assert.Equal(44, result);
+    }
+
+    [Fact]
+    public void LambdaExpressionWithBindEvaluatesTo44()
+    {
+        // Arrange & Act
+        var expr = BuildLambdaExpression();
+        var folder = Sig.SigSemantic(
+            new LitEvalFolder<EvalS>(),
+            new ArithEvalFolder<EvalS>(),
+            new LamEvalFolder<EvalS>(),
+            new AppEvalFolder<EvalS>(),
+            new BindEvalFolder<EvalS>()
+        );
+
+        // var el = expr.Fold<Fix<SCore>>(new BindLoweringFolder());
+        // var S2 =
+        //     Fix<SCore>.SyntaxFactory.Prj();
+        // var x = new Identifier("x");
+        // var ef = S2.Lambda(x, S2.Var(x));
+        // // var el = S2.Apply(ef, S2.LitI(3));
+
+
+        var vals = expr.Fold<IS<EvalS, ISigValue>>(folder);
+
+        var (valr, _) = vals.Unwrap()(ImmutableDictionary<Identifier, ISigValue>.Empty);
+        Assert.Equal(new SigInt(44), valr);
     }
 
     private Fix<Sig> BuildLambdaExpression()

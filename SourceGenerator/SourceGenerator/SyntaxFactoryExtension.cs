@@ -8,8 +8,10 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace SemanticAlgebra.SourceGenerator;
 
-sealed class ReplaceContainerMemberNotImplementedException(SyntaxNode Node, MemberDeclarationSyntax Hole) : Exception(
-    $"Syntax node of kind {Node.Kind()} not implemented")
+sealed class ReplaceContainerMemberNotImplementedException(
+    SyntaxNode Node,
+    MemberDeclarationSyntax Hole) : Exception(
+    $"Syntax node of kind {Node.Kind()} with hole {Hole} not implemented")
 {
 }
 

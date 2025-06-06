@@ -65,12 +65,13 @@ public sealed class AppEvalFolder<M> : IAppSemantic<IS<M, ISigValue>, IS<M, ISig
     where M : IMonadState<M, ImmutableDictionary<Identifier, ISigValue>>
 {
     public IS<M, ISigValue> Apply(IS<M, ISigValue> f, IS<M, ISigValue> x)
-        => from s in M.Get()
-           from f_ in f
+        => from f_ in f
            from x_ in x
            from r in f_ switch
            {
                SigLam<M> func => func.F(x_),
+               SigClosure<M, ISigValue> c =>
+                   M.Local<ISigValue>(s => c.Env.Add(c.Name, x_), c.Body),
                _ => throw new InvalidOperationException(
                    "Function application requires a function and an integer argument")
            }

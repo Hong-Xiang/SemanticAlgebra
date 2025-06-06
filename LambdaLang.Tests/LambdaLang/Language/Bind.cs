@@ -1,25 +1,12 @@
+using System.Collections.Immutable;
 using SemanticAlgebra;
-using SemanticAlgebra.Control;
 using SemanticAlgebra.Data;
-using SemanticAlgebra.Fix;
 using SemanticAlgebra.Syntax;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
 
 public partial interface Bind : IFunctor<Bind>
 {
-    // public static IS<Bind, T> Let<T>(Identifier name, T expr, T body) => new Let<T>(name, expr, body);
-
-    // static ISemantic1<Bind, TS, TR> IKind1<Bind>.Compose<TS, TI, TR>(ISemantic1<Bind, TS, TI> s, Func<TI, TR> f)
-    //     => new BindComposeSemantic<TS, TI, TR>(s.Prj(), f);
-
-    // static ISemantic1<Bind, T, IS<Bind, T>> global::SemanticAlgebra.IKind1<Bind>.Id<T>()
-    //     => new BindIdSemantic<T>();
-
-    // static ISemantic1<Bind, TS, IS<Bind, TR>> IFunctor<Bind>.MapS<TS, TR>(Func<TS, TR> f)
-    //     => new BindMapSemantic<TS, TR>(f);
-
-
     [Semantic1]
     public interface ISemantic<in TS, out TR> : ISemantic1<Bind, TS, TR>
     {
@@ -33,35 +20,12 @@ public sealed class BindShowFolder : Bind.ISemantic<string, string>
         => $"(let {name.Name} = {expr} in {body})";
 }
 
-
-// static class BindExtension
-// {
-//     public static IBindSemantic<TS, TR> Prj<TS, TR>(this ISemantic1<Bind, TS, TR> s)
-//         => (IBindSemantic<TS, TR>)s;
-// }
-
-// sealed record class Let<T>(Identifier Name, T Expr, T Body)
-//     : IS<Bind, T>
-// {
-//     public TR Evaluate<TR>(ISemantic1<Bind, T, TR> semantic)
-//         => semantic.Prj().Let(Name, Expr, Body);
-// }
-
-// public sealed class BindComposeSemantic<TS, TI, TR>(Bind.ISemantic<TS, TI> S, Func<TI, TR> F) : Bind.ISemantic<TS, TR>
-// {
-//     public TR Let(Identifier name, TS expr, TS body)
-//         => F(S.Let(name, expr, body));
-// }
-//
-// public sealed class BindIdSemantic<T>() : Bind.ISemantic<T, IS<Bind, T>>
-// {
-//     public IS<Bind, T> Let(Identifier name, T expr, T body)
-//         => Bind.B.Let(name, expr, body);
-// }
-//
-// //
-// public sealed class BindMapSemantic<TS, TR>(Func<TS, TR> F) : Bind.ISemantic<TS, IS<Bind, TR>>
-// {
-//     public IS<Bind, TR> Let(Identifier name, TS expr, TS body)
-//         => Bind.B.Let(name, F(expr), F(body));
-// }
+sealed class BindEvalFolder<M> : Bind.ISemantic<IS<M, ISigValue>, IS<M, ISigValue>>
+    where M : IMonadState<M, ImmutableDictionary<Identifier, ISigValue>>
+{
+    public IS<M, ISigValue> Let(Identifier name, IS<M, ISigValue> expr, IS<M, ISigValue> body)
+        => from v in expr
+           from _ in M.Modify(s => s.Add(name, v))
+           from r in body
+           select r;
+}

@@ -90,35 +90,12 @@ public sealed class LamEvalFolder<M> : ILamSemantic<IS<M, ISigValue>, IS<M, ISig
     where M : IMonadState<M, ImmutableDictionary<Identifier, ISigValue>>
 {
     public IS<M, ISigValue> Lambda(Identifier name, IS<M, ISigValue> expr)
-        => from cenv in M.Get()
-           select (ISigValue)new SigLam<M>(val =>
-           {
-               // Get current state, set parameter, evaluate expression, restore state
-               // var originalState = M.Get();
-               var r = from oenv in M.Get()
-                       from _1 in M.Put(cenv.Add(name, val))
-                       from e in expr
-                       // from s in env.SelectMany(osv =>
-                       // {
-                       //     Console.WriteLine(osv);
-                       //     return M.Pure(gC);
-                       // })
-                       // from _ in originalState.SelectMany(s => M.Put(s))
-                       from _2 in M.Put(oenv)
-                       select e;
-               return r;
-
-
-               // var getCurrentState = M.Get();
-               // var setParameter = getCurrentState.SelectMany(currentState => M.Put(currentState.Add(name, val)));
-               // var evaluateExpr = setParameter.SelectMany(_ => expr);
-               // var restoreState = evaluateExpr.SelectMany(result =>
-               //     getCurrentState.SelectMany(originalState =>
-               //         M.Put(originalState).Select(_ => result)));
-               // return restoreState;
-           });
-    // => from e in M.Get()
-    // select (ISigValue)(new SigClosure<M>(e, expr));
+        // => from cenv in M.Get()
+        //    select (ISigValue)new SigLam<M>(val =>
+        //        expr.WithLocal<M, ImmutableDictionary<Identifier, ISigValue>, ISigValue>(_ =>
+        //            cenv.Add(name, val)));
+        => from e in M.Get()
+           select (ISigValue)(new SigClosure<M, ISigValue>(name, e, expr));
 
     IS<M, ISigValue> ILamSemantic<IS<M, ISigValue>, IS<M, ISigValue>>.Var(Identifier name)
         => M.Get().Select(env => env.TryGetValue(name, out var val) ? val : throw new KeyNotFoundException(name.Name));

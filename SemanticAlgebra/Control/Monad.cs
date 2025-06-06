@@ -11,3 +11,9 @@ public interface IMonad<TF> : IApplicative<TF>, IBind<TF>
                 select f(s))
         );
 }
+
+public interface IMonadFix<F> : IMonad<F>
+    where F : IMonadFix<F>
+{
+    static abstract IS<F, T> Fix<T>(Func<Lazy<T>, IS<F, T>> f);
+}

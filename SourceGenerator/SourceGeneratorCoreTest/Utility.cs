@@ -20,7 +20,6 @@ public sealed class SemanticKind1BrandAttribute : Attribute
         => result is null ? [] : result.Results.SelectMany(r => r.GeneratedSources);
 
     public static readonly string State2BrandCode = 
-        
 """
 using SemanticAlgebra.Control;
 using SemanticAlgebra.Syntax;

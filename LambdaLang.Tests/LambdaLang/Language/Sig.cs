@@ -112,24 +112,3 @@ public sealed class BindLoweringFolder
     public Fix<SCore> Let(Identifier name, Fix<SCore> expr, Fix<SCore> body)
         => Apply(Lambda(name, expr), body);
 }
-
-public interface ISigValue
-{
-}
-
-public sealed record SigInt(int Value) : ISigValue
-{
-}
-
-public sealed record SigClosure<M>(
-    ImmutableDictionary<Identifier, ISigValue> Env,
-    Func<ISigValue, IS<M, ISigValue>> Body
-) : ISigValue
-    where M : IMonadState<M, ImmutableDictionary<Identifier, ISigValue>>
-{
-}
-
-public sealed record SigLam<M>(Func<ISigValue, IS<M, ISigValue>> F) : ISigValue
-    where M : IMonadState<M, ImmutableDictionary<Identifier, ISigValue>>
-{
-}

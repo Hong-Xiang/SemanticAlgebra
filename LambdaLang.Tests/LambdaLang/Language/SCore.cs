@@ -8,7 +8,7 @@ public interface SCore
     : IFunctor<SCore>
     , Lit, Arith, Lam, App
 {
-    static ISemantic<TS, TR> ComposeSemantic<TS, TR>(
+    static ISemantic<TS, TR> MergeSemantic<TS, TR>(
         ISemantic1<Lit, TS, TR> Lit,
         ISemantic1<Arith, TS, TR> Arith,
         ISemantic1<Lam, TS, TR> Lam,
@@ -17,13 +17,13 @@ public interface SCore
         => new SCoreSemantic<TS, TR>(Lit.Prj(), Arith.Prj(), Lam.Prj(), App.Prj());
 
     static ISemantic1<SCore, TS, TR> IKind1<SCore>.Compose<TS, TI, TR>(ISemantic1<SCore, TS, TI> s, Func<TI, TR> f)
-        => ComposeSemantic(Kind1K<Lit>.Compose(s, f),
+        => MergeSemantic(Kind1K<Lit>.Compose(s, f),
             Kind1K<Arith>.Compose(s, f),
             Kind1K<Lam>.Compose(s, f),
             Kind1K<App>.Compose(s, f));
 
     static ISemantic1<SCore, T, IS<SCore, T>> IKind1<SCore>.Id<T>()
-        => ComposeSemantic<T, IS<SCore, T>>(
+        => MergeSemantic<T, IS<SCore, T>>(
             Kind1K<Lit>.Id<T>(),
             Kind1K<Arith>.Id<T>(),
             Kind1K<Lam>.Id<T>(),
@@ -31,7 +31,7 @@ public interface SCore
         );
 
     static ISemantic1<SCore, TS, IS<SCore, TR>> IFunctor<SCore>.MapS<TS, TR>(Func<TS, TR> f)
-        => ComposeSemantic<TS, IS<SCore, TR>>(
+        => MergeSemantic<TS, IS<SCore, TR>>(
             FunctorK<Lit>.MapS(f).Prj(),
             FunctorK<Arith>.MapS(f).Prj(),
             FunctorK<Lam>.MapS(f).Prj(),
@@ -54,7 +54,7 @@ public static class SCoreExtension
         => (SCore.ISemantic<TS, TR>)s;
 
     public static string Show(this Fix<SCore> e)
-        => e.Fold<string>(SCore.ComposeSemantic(
+        => e.Fold<string>(SCore.MergeSemantic(
             new LitShowFolder(),
             new ArithShowFolder(),
             new LamShowFolder(),
