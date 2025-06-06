@@ -7,22 +7,29 @@ public sealed class Func2B
     public static class B
     {
         public static IS<K1<TS>, TR> From<TS, TR>(Func<TS, TR> value)
-            => Alias1.B.From<K1<TS>, TR, Func<TS, TR>>(value);
+            //=> Alias1.B.From<K1<TS>, TR, Func<TS, TR>>(value);
+            => K1<TS>.IAlias1<TR>.From(value);
     }
 
     public sealed class K1<S>
         : IMonad<K1<S>>
     {
-        public interface ISemantic<in TS, out TR>
-            : Alias1.ISemantic<K1<S>, TS, TR, Func<S, TS>>
+        public interface IAlias1<TS> : Alias1.ISpec<K1<S>, TS, Func<S, TS>>
         {
         }
 
+        //public interface ISemantic<in TS, out TR>
+        //    : Alias1.ISpec<K1<S>, TS, Func<S, TS>>.ISemantic<TR>
+        //{
+        //}
+
         public static ISemantic1<K1<S>, T, IS<K1<S>, T>> Id<T>()
-            => Alias1.Id<K1<S>, T, Func<S, T>>();
+            //=> Alias1.Id<K1<S>, T, Func<S, T>>();
+            => IAlias1<T>.Id();
 
         public static ISemantic1<K1<S>, TS, TR> Compose<TS, TI, TR>(ISemantic1<K1<S>, TS, TI> s, Func<TI, TR> f)
-            => Alias1.Compose<K1<S>, TS, TI, TR, Func<S, TS>>(s, f);
+            => IAlias1<TS>.Compose(s, f);
+            //=> Alias1.Compose<K1<S>, TS, TI, TR, Func<S, TS>>(s, f);
 
         public static ISemantic1<K1<S>, TS, IS<K1<S>, TR>> MapS<TS, TR>(Func<TS, TR> f)
             => Id<TS>().Compose(fs => B.From<S, TR>(s => f(fs.Unwrap()(s))));
@@ -48,5 +55,6 @@ public sealed class Func2B
 public static partial class Func2BExtension
 {
     public static Func<TS, TR> Unwrap<TS, TR>(this IS<Func2B.K1<TS>, TR> e)
-        => ((Alias1.D.From<Func2B.K1<TS>, TR, Func<TS, TR>>)e).Value;
+        //=> ((Alias1.D.From<Func2B.K1<TS>, TR, Func<TS, TR>>)e).Value;
+        => Func2B.K1<TS>.IAlias1<TR>.Unwrap(e);
 }

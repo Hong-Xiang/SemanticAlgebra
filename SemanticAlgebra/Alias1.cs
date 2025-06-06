@@ -4,11 +4,39 @@ namespace SemanticAlgebra;
 
 public static class Alias1
 {
-    public interface ISemantic<F, in TS, out TR, in T> : ISemantic1<F, TS, TR>
+    //public interface ISemantic<F, in TS, out TR, in T> : ISemantic1<F, TS, TR>
+    //    where F : IKind1<F>
+    //{
+    //    TR From(T value);
+    //}
+
+    public interface ISpec<F, in TS, TV>
         where F : IKind1<F>
     {
-        TR From(T value);
+        public static TV Unwrap(IS<F, TS> e) => ((D.From<F, TS, TV>)e).Value;
+        public static ISemantic1<F, TS, TR> Compose<TI, TR>(ISemantic1<F, TS, TI> s, Func<TI, TR> f)
+              => Alias1.Compose<F, TS, TI, TR, TV>(s, f);
+        public static ISemantic1<F, TS, IS<F, TS>> Id()
+            => Alias1.Id<F, TS, TV>();
+        public static IS<F, TS> From(TV value) => B.From<F, TS, TV>(value);
+
+        public interface ISemantic<out TR> : ISemantic1<F, TS, TR>
+        {
+            TR From(TV value);
+        }
+
+
+        public static ISemantic<TR> Semantic<TR>(Func<TV, TR> f)
+            => new AliasFuncSemantic<F, TS, TV, TR>(f);
     }
+
+    sealed class AliasFuncSemantic<F, TS, TV, TR>(Func<TV, TR> Func) : ISpec<F, TS, TV>.ISemantic<TR>
+        where F : IKind1<F>
+    {
+        public TR From(TV value)
+            => Func(value);
+    }
+
 
     public static class B
     {
@@ -23,10 +51,7 @@ public static class Alias1
             where F : IKind1<F>
         {
             public TR Evaluate<TR>(ISemantic1<F, T, TR> semantic)
-            {
-                var sem = (Alias1.ISemantic<F, T, TR, TV>)semantic;
-                return sem.From(Value);
-            }
+                => ((ISpec<F, T, TV>.ISemantic<TR>)semantic).From(Value);
         }
     }
 
@@ -39,7 +64,7 @@ public static class Alias1
         => new ComposeSemantic<F, TS, TI, TR, TV>(s, f);
 
     sealed class IdSemantic<F, T, TV>
-        : ISemantic<F, T, IS<F, T>, TV>
+        : ISpec<F, T, TV>.ISemantic<IS<F, T>>
         where F : IKind1<F>
     {
         public IS<F, T> From(TV value)
@@ -49,11 +74,10 @@ public static class Alias1
     sealed record class ComposeSemantic<F, TS, TI, TR, TV>(
         ISemantic1<F, TS, TI> s,
         Func<TI, TR> f
-    )
-        : ISemantic<F, TS, TR, TV>
+    ) : ISpec<F, TS, TV>.ISemantic<TR>
         where F : IKind1<F>
     {
         public TR From(TV value) =>
-            f(((ISemantic<F, TS, TI, TV>)s).From(value));
+            f(((ISpec<F, TS, TV>.ISemantic<TI>)s).From(value));
     }
 }
