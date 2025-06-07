@@ -24,10 +24,10 @@ public static class Alias1
         {
             TR From(TV value);
         }
-
-
         public static ISemantic<TR> Semantic<TR>(Func<TV, TR> f)
             => new AliasFuncSemantic<F, TS, TV, TR>(f);
+        public static ISemantic<TR> Prj<TR>(ISemantic1<F, TS, TR> s)
+            => (ISemantic<TR>)s;
     }
 
     sealed class AliasFuncSemantic<F, TS, TV, TR>(Func<TV, TR> Func) : ISpec<F, TS, TV>.ISemantic<TR>
@@ -78,6 +78,6 @@ public static class Alias1
         where F : IKind1<F>
     {
         public TR From(TV value) =>
-            f(((ISpec<F, TS, TV>.ISemantic<TI>)s).From(value));
+            f(ISpec<F, TS, TV>.Prj(s).From(value));
     }
 }

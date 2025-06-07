@@ -5,7 +5,10 @@ using SemanticAlgebra.Data;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
 
-public interface App : IFunctor<App>
+public interface App
+    : IFunctor<App>
+    , IWithAlgebra<App, ShowAlgebra, string>
+    , IEvalAlgebra<App>
 {
     public static IS<App, T> Apply<T>(T f, T x) => new Apply<T>(f, x);
 
@@ -17,6 +20,12 @@ public interface App : IFunctor<App>
 
     static ISemantic1<App, TS, IS<App, TR>> IFunctor<App>.MapS<TS, TR>(Func<TS, TR> f)
         => new AppMapSemantic<TS, TR>(f);
+
+    static ISemantic1<App, string, string> IWithAlgebra<App, ShowAlgebra, string>.Get()
+        => new AppShowFolder();
+
+    static ISemantic1<App, IS<M, ISigValue>, IS<M, ISigValue>> IEvalAlgebra<App>.Get<M>()
+        => new AppEvalFolder<M>();
 }
 
 public interface IAppSemantic<in TS, out TR> : ISemantic1<App, TS, TR>
@@ -71,9 +80,9 @@ public sealed class AppEvalFolder<M> : IAppSemantic<IS<M, ISigValue>, IS<M, ISig
            {
                SigLam<M> func => func.F(x_),
                SigClosure<M, ISigValue> c =>
-                   M.Local<ISigValue>(s => c.Env.Add(c.Name, x_), c.Body),
-               _ => throw new InvalidOperationException(
-                   "Function application requires a function and an integer argument")
+                   M.Local(s => c.Env.Add(c.Name, x_), c.Body),
+               _ => throw new EvalRuntimeException(
+                   $"Function application requires a function and an value argument, got {f_} {x_}")
            }
            select r;
 }

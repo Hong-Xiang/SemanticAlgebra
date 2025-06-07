@@ -1,5 +1,6 @@
 using SemanticAlgebra;
 using SemanticAlgebra.Option;
+using Xunit;
 
 namespace LambdaLang.Tests;
 

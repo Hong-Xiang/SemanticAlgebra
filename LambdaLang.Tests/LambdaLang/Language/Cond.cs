@@ -5,7 +5,10 @@ using SemanticAlgebra.Syntax;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
 
-public partial interface Cond : IFunctor<Cond>
+public partial interface Cond
+    : IFunctor<Cond>
+    , IWithAlgebra<Cond, ShowAlgebra, string>
+    , IEvalAlgebra<Cond>
 {
     [Semantic1]
     public interface ISemantic<in TS, out TR>
@@ -14,6 +17,12 @@ public partial interface Cond : IFunctor<Cond>
         TR If(TS c, TS t, TS fn);
         TR Eq(TS a, TS b);
     }
+
+    static ISemantic1<Cond, string, string> IWithAlgebra<Cond, ShowAlgebra, string>.Get()
+        => new CondShowFolder();
+
+    static ISemantic1<Cond, IS<M, ISigValue>, IS<M, ISigValue>> IEvalAlgebra<Cond>.Get<M>()
+        => new CondEvalFolder<M>();
 }
 
 public sealed class CondShowFolder : Cond.ISemantic<string, string>
@@ -25,10 +34,6 @@ public sealed class CondShowFolder : Cond.ISemantic<string, string>
         => $"({a} == {b})";
 }
 
-sealed class EvalRuntimeException(string message) : Exception(message)
-{
-}
-
 public sealed class CondEvalFolder<M> : Cond.ISemantic<
     IS<M, ISigValue>,
     IS<M, ISigValue>
@@ -37,7 +42,7 @@ public sealed class CondEvalFolder<M> : Cond.ISemantic<
 {
     public IS<M, ISigValue> If(IS<M, ISigValue> c, IS<M, ISigValue> t, IS<M, ISigValue> f)
         => from b in c
-           let bv = ((SigBool)b).Value
+           let bv = (b as SigBool ?? throw new EvalRuntimeException($"requires bool, got {b}")).Value
            from r in bv ? t : f
            select r;
 

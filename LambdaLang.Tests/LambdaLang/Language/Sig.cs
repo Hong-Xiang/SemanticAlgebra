@@ -8,9 +8,20 @@ namespace LambdaLang.Tests.LambdaLang.Language;
 
 public interface Sig
     : IFunctor<Sig>
+    , IMergedSemantic1<Sig, Lit, Arith, Lam, App, Bind>
+    , IMergedSemantic1WithAlgebra<Sig, ShowAlgebra, string, Lit, Arith, Lam, App, Bind>
+    , IMergedSemantic1EvalAlgebra<Sig, Lit, Arith, Lam, App, Bind>
     , Lit, Arith, Lam, App, Bind
 {
-    static ISigSemantic<TS, TR> SigSemantic<TS, TR>(
+    static ISemantic1<Sig, TS, TR> IMergedSemantic1<Sig, Lit, Arith, Lam, App, Bind>.MergeSemantic<TS, TR>(
+        ISemantic1<Lit, TS, TR> Lit,
+        ISemantic1<Arith, TS, TR> Arith,
+        ISemantic1<Lam, TS, TR> Lam,
+        ISemantic1<App, TS, TR> App,
+        ISemantic1<Bind, TS, TR> Bind
+    ) => MergeSemantic(Lit, Arith, Lam, App, Bind);
+
+    public static ISemantic1<Sig, TS, TR> MergeSemantic<TS, TR>(
         ISemantic1<Lit, TS, TR> Lit,
         ISemantic1<Arith, TS, TR> Arith,
         ISemantic1<Lam, TS, TR> Lam,
@@ -19,53 +30,55 @@ public interface Sig
     )
         => new SigSemantic<TS, TR>(Lit.Prj(), Arith.Prj(), Lam.Prj(), App.Prj(), Bind.Prj());
 
-    static ISemantic1<Sig, TS, TR> IKind1<Sig>.Compose<TS, TI, TR>(ISemantic1<Sig, TS, TI> s, Func<TI, TR> f)
-        => SigSemantic(Kind1K<Lit>.Compose(s, f),
-            Kind1K<Arith>.Compose(s, f),
-            Kind1K<Lam>.Compose(s, f),
-            Kind1K<App>.Compose(s, f),
-            Kind1K<Bind>.Compose(s, f));
+    //static ISemantic1<Sig, TS, TR> IKind1<Sig>.Compose<TS, TI, TR>(ISemantic1<Sig, TS, TI> s, Func<TI, TR> f)
+    //    => SigSemantic(Kind1K<Lit>.Compose(s, f),
+    //        Kind1K<Arith>.Compose(s, f),
+    //        Kind1K<Lam>.Compose(s, f),
+    //        Kind1K<App>.Compose(s, f),
+    //        Kind1K<Bind>.Compose(s, f));
 
-    static ISemantic1<Sig, T, IS<Sig, T>> IKind1<Sig>.Id<T>()
-        => SigSemantic<T, IS<Sig, T>>(
-            Kind1K<Lit>.Id<T>(),
-            Kind1K<Arith>.Id<T>(),
-            Kind1K<Lam>.Id<T>(),
-            Kind1K<App>.Id<T>(),
-            Kind1K<Bind>.Id<T>()
-        );
+    //static ISemantic1<Sig, T, IS<Sig, T>> IKind1<Sig>.Id<T>()
+    //    => SigSemantic<T, IS<Sig, T>>(
+    //        Kind1K<Lit>.Id<T>(),
+    //        Kind1K<Arith>.Id<T>(),
+    //        Kind1K<Lam>.Id<T>(),
+    //        Kind1K<App>.Id<T>(),
+    //        Kind1K<Bind>.Id<T>()
+    //);
 
-    static ISemantic1<Sig, TS, IS<Sig, TR>> IFunctor<Sig>.MapS<TS, TR>(Func<TS, TR> f)
-        => SigSemantic<TS, IS<Sig, TR>>(FunctorK<Lit>.MapS(f).Prj(),
-            FunctorK<Arith>.MapS(f).Prj(),
-            FunctorK<Lam>.MapS(f).Prj(),
-            FunctorK<App>.MapS(f).Prj(),
-            FunctorK<Bind>.MapS(f).Prj());
-}
+    // static ISemantic1<Sig, TS, IS<Sig, TR>> IFunctor<Sig>.MapS<TS, TR>(Func<TS, TR> f)
+    //     => MergeSemantic<TS, IS<Sig, TR>>(FunctorK<Lit>.MapS(f).Prj(),
+    //         FunctorK<Arith>.MapS(f).Prj(),
+    //         FunctorK<Lam>.MapS(f).Prj(),
+    //         FunctorK<App>.MapS(f).Prj(),
+    //         FunctorK<Bind>.MapS(f).Prj());
 
-public interface ISigSemantic<in TI, out TO>
-    : ISemantic1<Sig, TI, TO>
-    , ILitSemantic<TI, TO>
-    , IArithSemantic<TI, TO>
-    , ILamSemantic<TI, TO>
-    , IAppSemantic<TI, TO>
-    , Bind.ISemantic<TI, TO>
-{
+
+    public interface IMergedSemantic<in TI, out TO>
+        : ISemantic1<Sig, TI, TO>
+        , Lit.ISemantic<TI, TO>
+        , IArithSemantic<TI, TO>
+        , ILamSemantic<TI, TO>
+        , IAppSemantic<TI, TO>
+        , Bind.ISemantic<TI, TO>
+    {
+    }
 }
 
 public static class SigExtension
 {
-    public static ISigSemantic<TS, TR> Prj<TS, TR>(this ISemantic1<Sig, TS, TR> s)
-        => (ISigSemantic<TS, TR>)s;
+    public static Sig.IMergedSemantic<TS, TR> Prj<TS, TR>(this ISemantic1<Sig, TS, TR> s)
+        => (Sig.IMergedSemantic<TS, TR>)s;
 }
 
+
 public sealed class SigSemantic<TS, TR>(
-    ILitSemantic<TS, TR> Lit,
+    Lit.ISemantic<TS, TR> Lit,
     IArithSemantic<TS, TR> Arith,
     ILamSemantic<TS, TR> Lam,
     IAppSemantic<TS, TR> App,
     Bind.ISemantic<TS, TR> Bind
-) : ISigSemantic<TS, TR>
+) : Sig.IMergedSemantic<TS, TR>
 {
     public TR LitI(int value) => Lit.LitI(value);
 
@@ -86,13 +99,43 @@ public sealed class SigSemantic<TS, TR>(
 
     public TR Let(Identifier name, TS expr, TS body)
         => Bind.Let(name, expr, body);
+
+    public TR LetRec(Identifier name, TS expr, TS body)
+        => Bind.LetRec(name, expr, body);
+}
+
+public sealed class SigHasBindFolder : Sig.IMergedSemantic<bool, bool>
+{
+    public bool Add(bool l, bool r)
+        => l && r;
+
+    public bool Apply(bool f, bool x)
+        => f && x;
+
+    public bool Lambda(Identifier name, bool expr)
+        => expr;
+
+    public bool Let(Identifier name, bool expr, bool body)
+        => true;
+
+    public bool LetRec(Identifier name, bool expr, bool body)
+        => true;
+
+    public bool LitI(int value)
+        => false;
+
+    public bool Mul(bool l, bool r)
+        => l && r;
+
+    public bool Var(Identifier name)
+        => false;
 }
 
 public sealed class BindLoweringFolder
-    : ISigSemantic<Fix<SCore>, Fix<SCore>>
+    : Sig.IMergedSemantic<Fix<SCore>, Fix<SCore>>
 {
     public Fix<SCore> LitI(int value)
-        => Lit.LitI<Fix<SCore>>(value).Fix();
+        => Lit.B.LitI<Fix<SCore>>(value).Fix();
 
     public Fix<SCore> Add(Fix<SCore> l, Fix<SCore> r)
         => Arith.Add(l, r).Fix();
@@ -111,4 +154,9 @@ public sealed class BindLoweringFolder
 
     public Fix<SCore> Let(Identifier name, Fix<SCore> expr, Fix<SCore> body)
         => Apply(Lambda(name, expr), body);
+
+    public Fix<SCore> LetRec(Identifier name, Fix<SCore> expr, Fix<SCore> body)
+    {
+        throw new NotImplementedException();
+    }
 }

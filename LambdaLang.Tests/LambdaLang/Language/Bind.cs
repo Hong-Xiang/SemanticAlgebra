@@ -5,17 +5,32 @@ using SemanticAlgebra.Syntax;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
 
-public partial interface Bind : IFunctor<Bind>
+public partial interface Bind
+    : IFunctor<Bind>
+    , IWithAlgebra<Bind, ShowAlgebra, string>
+    , IEvalAlgebra<Bind>
 {
     [Semantic1]
     public interface ISemantic<in TS, out TR> : ISemantic1<Bind, TS, TR>
     {
         TR Let(Identifier name, TS expr, TS body);
+        TR LetRec(Identifier name, TS expr, TS body);
     }
+
+    static ISemantic1<Bind, string, string> IWithAlgebra<Bind, ShowAlgebra, string>.Get()
+        => new BindShowFolder();
+
+    static ISemantic1<Bind, IS<M, ISigValue>, IS<M, ISigValue>> IEvalAlgebra<Bind>.Get<M>()
+        => new BindEvalFolder<M>();
+
 }
 
 public sealed class BindShowFolder : Bind.ISemantic<string, string>
 {
+    public string LetRec(Identifier name, string expr, string body)
+        => $"(letrec {name.Name} = {expr} in {body})";
+
+
     string Bind.ISemantic<string, string>.Let(Identifier name, string expr, string body)
         => $"(let {name.Name} = {expr} in {body})";
 }
@@ -25,7 +40,9 @@ sealed class BindEvalFolder<M> : Bind.ISemantic<IS<M, ISigValue>, IS<M, ISigValu
 {
     public IS<M, ISigValue> Let(Identifier name, IS<M, ISigValue> expr, IS<M, ISigValue> body)
         => from v in expr
-           from _ in M.Modify(s => s.Add(name, v))
-           from r in body
+           from r in M.Local(s => s.Add(name, v), body)
            select r;
+
+    public IS<M, ISigValue> LetRec(Identifier name, IS<M, ISigValue> expr, IS<M, ISigValue> body)
+        => M.Local(s => s.Add(name, new SigFix<M, ISigValue>(name, expr)), body);
 }

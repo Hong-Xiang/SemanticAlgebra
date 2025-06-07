@@ -4,7 +4,10 @@ using SemanticAlgebra.Data;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
 
-public interface Arith : IFunctor<Arith>
+public interface Arith
+    : IFunctor<Arith>
+    , IWithAlgebra<Arith, ShowAlgebra, string>
+    , IEvalAlgebra<Arith>
 {
     public static IS<Arith, T> Add<T>(T left, T right) => new Add<T>(left, right);
     public static IS<Arith, T> Mul<T>(T left, T right) => new Mul<T>(left, right);
@@ -17,6 +20,13 @@ public interface Arith : IFunctor<Arith>
 
     static ISemantic1<Arith, TS, IS<Arith, TR>> IFunctor<Arith>.MapS<TS, TR>(Func<TS, TR> f)
         => new ArithMapSemantic<TS, TR>(f);
+
+    static ISemantic1<Arith, string, string> IWithAlgebra<Arith, ShowAlgebra, string>.Get()
+        => new ArithShowFolder();
+
+    static ISemantic1<Arith, IS<M, ISigValue>, IS<M, ISigValue>> IEvalAlgebra<Arith>.Get<M>()
+        => new ArithEvalFolder<M>();
+
 }
 
 public interface IArithSemantic<in TS, out TR> : ISemantic1<Arith, TS, TR>
@@ -90,7 +100,7 @@ public sealed class ArithEvalFolder<M> : IArithSemantic<IS<M, ISigValue>, IS<M, 
            select (l_, r_) switch
            {
                (SigInt left, SigInt right) => (ISigValue)new SigInt(left.Value + right.Value),
-               _ => throw new InvalidOperationException("Addition requires two integers")
+               _ => throw new EvalRuntimeException($"Add requires int arguments, got {l_}, {r_}")
            };
 
     public IS<M, ISigValue> Mul(IS<M, ISigValue> l, IS<M, ISigValue> r)
@@ -99,6 +109,6 @@ public sealed class ArithEvalFolder<M> : IArithSemantic<IS<M, ISigValue>, IS<M, 
            select (l_, r_) switch
            {
                (SigInt left, SigInt right) => (ISigValue)new SigInt(left.Value * right.Value),
-               _ => throw new InvalidOperationException("Addition requires two integers")
+               _ => throw new EvalRuntimeException($"Mul requires int arguments, got {l_}, {r_}")
            };
 }

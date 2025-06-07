@@ -68,7 +68,7 @@ public abstract partial class Identity
     //}
 }
 
-static class IdentityExtension
+public static class IdentityExtension
 {
     public static Identity.IAlias1<TS>.ISemantic<TR> Prj<TS, TR>(this ISemantic1<Identity, TS, TR> s)
         => (Identity.IAlias1<TS>.ISemantic<TR>)s;

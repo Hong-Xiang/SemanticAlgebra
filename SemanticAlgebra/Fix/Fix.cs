@@ -26,6 +26,8 @@ public static class FixExtension
     public static Fix<F> Fix<F>(this IS<F, Fix<F>> e)
         where F : IFunctor<F>
         => new(e);
+
+
 }
 
 // given forall a. f w a -> w f a

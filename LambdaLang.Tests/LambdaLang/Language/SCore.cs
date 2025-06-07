@@ -40,7 +40,7 @@ public interface SCore
 
     public interface ISemantic<in TI, out TO>
         : ISemantic1<SCore, TI, TO>
-        , ILitSemantic<TI, TO>
+        , Lit.ISemantic<TI, TO>
         , IArithSemantic<TI, TO>
         , ILamSemantic<TI, TO>
         , IAppSemantic<TI, TO>
@@ -63,7 +63,7 @@ public static class SCoreExtension
 }
 
 public sealed class SCoreSemantic<TS, TR>(
-    ILitSemantic<TS, TR> Lit,
+    Lit.ISemantic<TS, TR> Lit,
     IArithSemantic<TS, TR> Arith,
     ILamSemantic<TS, TR> Lam,
     IAppSemantic<TS, TR> App

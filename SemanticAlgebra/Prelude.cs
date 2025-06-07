@@ -1,5 +1,6 @@
 ﻿using SemanticAlgebra.Control;
 using SemanticAlgebra.Data;
+using System.Linq.Expressions;
 
 namespace SemanticAlgebra;
 
@@ -63,4 +64,11 @@ public static class Prelude
     public static T Extract<F, T>(this IS<F, T> ft)
         where F : IExtract<F>
         => ft.Evaluate(F.ExtractS<T>());
+
+    public static T Fix<T>(Func<Lazy<T>, T> f)
+    {
+        Lazy<T>? r = null;
+        r = new Lazy<T>(() => f(r!));
+        return r.Value;
+    }
 }

@@ -1,4 +1,4 @@
-using SemanticAlgebra.Fix;
+using Xunit;
 using Xunit.Abstractions;
 
 namespace LambdaLang.Tests.IntLang;

@@ -9,7 +9,10 @@ public sealed class Identifier(string name)
     public string Name { get; } = name;
 }
 
-public interface Lam : IFunctor<Lam>
+public interface Lam
+    : IFunctor<Lam>
+    , IWithAlgebra<Lam, ShowAlgebra, string>
+    , IEvalAlgebra<Lam>
 {
     public static IS<Lam, T> Var<T>(Identifier name) => new Var<T>(name);
     public static IS<Lam, T> Lambda<T>(Identifier name, T expr) => new Lambda<T>(name, expr);
@@ -22,6 +25,13 @@ public interface Lam : IFunctor<Lam>
 
     static ISemantic1<Lam, TS, IS<Lam, TR>> IFunctor<Lam>.MapS<TS, TR>(Func<TS, TR> f)
         => new LamMapSemantic<TS, TR>(f);
+
+
+    static ISemantic1<Lam, string, string> IWithAlgebra<Lam, ShowAlgebra, string>.Get()
+        => new LamShowFolder();
+
+    static ISemantic1<Lam, IS<M, ISigValue>, IS<M, ISigValue>> IEvalAlgebra<Lam>.Get<M>()
+        => new LamEvalFolder<M>();
 }
 
 public interface ILamSemantic<in TS, out TR> : ISemantic1<Lam, TS, TR>
@@ -98,5 +108,8 @@ public sealed class LamEvalFolder<M> : ILamSemantic<IS<M, ISigValue>, IS<M, ISig
            select (ISigValue)(new SigClosure<M, ISigValue>(name, e, expr));
 
     IS<M, ISigValue> ILamSemantic<IS<M, ISigValue>, IS<M, ISigValue>>.Var(Identifier name)
-        => M.Get().Select(env => env.TryGetValue(name, out var val) ? val : throw new KeyNotFoundException(name.Name));
+        => M.Get().Select(env =>
+            env.TryGetValue(name, out var val)
+                ? val
+                : throw new EvalRuntimeException($"identifier {name.Name} not found"));
 }

@@ -5,8 +5,6 @@ VisualStudioVersion = 17.13.35931.197
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SemanticAlgebra", "SemanticAlgebra\SemanticAlgebra.csproj", "{FD2CD326-514B-DBDD-AB71-0A1B8E41F585}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LambdaLang", "Samples\LambdaLang\LambdaLang.csproj", "{6D02709F-57AC-CF90-1B59-14173E486080}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LambdaLang.Tests", "LambdaLang.Tests\LambdaLang.Tests.csproj", "{AB530EDB-6E05-4C57-8BF3-58621A73D094}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SourceGenerator", "SourceGenerator", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
@@ -27,10 +25,6 @@ Global
 		{FD2CD326-514B-DBDD-AB71-0A1B8E41F585}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FD2CD326-514B-DBDD-AB71-0A1B8E41F585}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FD2CD326-514B-DBDD-AB71-0A1B8E41F585}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6D02709F-57AC-CF90-1B59-14173E486080}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6D02709F-57AC-CF90-1B59-14173E486080}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6D02709F-57AC-CF90-1B59-14173E486080}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6D02709F-57AC-CF90-1B59-14173E486080}.Release|Any CPU.Build.0 = Release|Any CPU
 		{AB530EDB-6E05-4C57-8BF3-58621A73D094}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AB530EDB-6E05-4C57-8BF3-58621A73D094}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AB530EDB-6E05-4C57-8BF3-58621A73D094}.Release|Any CPU.ActiveCfg = Release|Any CPU
