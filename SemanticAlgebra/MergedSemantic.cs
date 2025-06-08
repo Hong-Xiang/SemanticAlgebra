@@ -129,6 +129,17 @@ public interface IMergedSemantic1<
             TS5.Id<T>().Compose(e => (IS<TMS, T>)e),
             TS6.Id<T>().Compose(e => (IS<TMS, T>)e)
         );
+
+    static ISemantic1<TMS, TS, IS<TMS, TR>> IFunctor<TMS>.MapS<TS, TR>(Func<TS, TR> f)
+        => TMS.MergeSemantic<TS, IS<TMS, TR>>(
+            TS1.MapS(f).Compose(e => (IS<TMS, TR>)e),
+            TS2.MapS(f).Compose(e => (IS<TMS, TR>)e),
+            TS3.MapS(f).Compose(e => (IS<TMS, TR>)e),
+            TS4.MapS(f).Compose(e => (IS<TMS, TR>)e),
+            TS5.MapS(f).Compose(e => (IS<TMS, TR>)e),
+            TS6.MapS(f).Compose(e => (IS<TMS, TR>)e)
+            );
+
 }
 
 public interface IMergedSemantic1WithAlgebra<

@@ -78,9 +78,14 @@ public sealed class AppEvalFolder<M> : IAppSemantic<IS<M, ISigValue>, IS<M, ISig
            from x_ in x
            from r in f_ switch
            {
-               SigLam<M> func => func.F(x_),
+               //SigLam<M> func => func.F(x_),
                SigClosure<M, ISigValue> c =>
                    M.Local(s => c.Env.Add(c.Name, x_), c.Body),
+               //SigFix<M, ISigValue> f =>
+               //Apply(
+               //    M.Local(s => f.Env.Add(f.Name, f), f.Expr),
+               //    M.Pure(x_)
+               //    ),
                _ => throw new EvalRuntimeException(
                    $"Function application requires a function and an value argument, got {f_} {x_}")
            }

@@ -44,5 +44,34 @@ sealed class BindEvalFolder<M> : Bind.ISemantic<IS<M, ISigValue>, IS<M, ISigValu
            select r;
 
     public IS<M, ISigValue> LetRec(Identifier name, IS<M, ISigValue> expr, IS<M, ISigValue> body)
-        => M.Local(s => s.Add(name, new SigFix<M, ISigValue>(name, expr)), body);
+        =>
+            from env in M.Get()
+                //from v in EvalFix(M.Pure<ISigValue>(new SigFix<M, ISigValue>(name, e, expr)))
+            from exp in expr
+            let expf = exp switch
+            {
+                SigClosure<M, ISigValue> c => GetRecClosure(name, c),
+                _ => throw new EvalRuntimeException("let-rec only support lambda definition")
+            }
+            from r in M.Local(s => s.Add(name, expf), body)
+            select r;
+
+    public static SigClosure<M, ISigValue> GetRecClosure(
+        Identifier name,
+        SigClosure<M, ISigValue> original
+    )
+    {
+        var result = new SigClosure<M, ISigValue>(original.Name, original.Env, original.Body);
+        result.Env = result.Env.Add(name, result);
+        return result;
+    }
+
+    public static IS<M, ISigValue> EvalFix(IS<M, ISigValue> e)
+           => e switch
+           {
+               SigFix<M, ISigValue> s =>
+                    EvalFix(M.Local(_ => s.Env.Add(s.Name, s), s.Expr)),
+               _ => e
+           };
+
 }

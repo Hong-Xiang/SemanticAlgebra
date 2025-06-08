@@ -8,27 +8,29 @@ namespace LambdaLang.Tests.LambdaLang.Language;
 
 public interface Sig
     : IFunctor<Sig>
-    , IMergedSemantic1<Sig, Lit, Arith, Lam, App, Bind>
-    , IMergedSemantic1WithAlgebra<Sig, ShowAlgebra, string, Lit, Arith, Lam, App, Bind>
-    , IMergedSemantic1EvalAlgebra<Sig, Lit, Arith, Lam, App, Bind>
-    , Lit, Arith, Lam, App, Bind
+    , IMergedSemantic1<Sig, Lit, Arith, Lam, App, Bind, Cond>
+    , IMergedSemantic1WithAlgebra<Sig, ShowAlgebra, string, Lit, Arith, Lam, App, Bind, Cond>
+    , IMergedSemantic1EvalAlgebra<Sig, Lit, Arith, Lam, App, Bind, Cond>
+    , Lit, Arith, Lam, App, Bind, Cond
 {
-    static ISemantic1<Sig, TS, TR> IMergedSemantic1<Sig, Lit, Arith, Lam, App, Bind>.MergeSemantic<TS, TR>(
+    static ISemantic1<Sig, TS, TR> IMergedSemantic1<Sig, Lit, Arith, Lam, App, Bind, Cond>.MergeSemantic<TS, TR>(
         ISemantic1<Lit, TS, TR> Lit,
         ISemantic1<Arith, TS, TR> Arith,
         ISemantic1<Lam, TS, TR> Lam,
         ISemantic1<App, TS, TR> App,
-        ISemantic1<Bind, TS, TR> Bind
-    ) => MergeSemantic(Lit, Arith, Lam, App, Bind);
+        ISemantic1<Bind, TS, TR> Bind,
+        ISemantic1<Cond, TS, TR> Cond
+    ) => MergeSemantic(Lit, Arith, Lam, App, Bind, Cond);
 
     public static ISemantic1<Sig, TS, TR> MergeSemantic<TS, TR>(
         ISemantic1<Lit, TS, TR> Lit,
         ISemantic1<Arith, TS, TR> Arith,
         ISemantic1<Lam, TS, TR> Lam,
         ISemantic1<App, TS, TR> App,
-        ISemantic1<Bind, TS, TR> Bind
+        ISemantic1<Bind, TS, TR> Bind,
+        ISemantic1<Cond, TS, TR> Cond
     )
-        => new SigSemantic<TS, TR>(Lit.Prj(), Arith.Prj(), Lam.Prj(), App.Prj(), Bind.Prj());
+        => new SigSemantic<TS, TR>(Lit.Prj(), Arith.Prj(), Lam.Prj(), App.Prj(), Bind.Prj(), Cond.Prj());
 
     //static ISemantic1<Sig, TS, TR> IKind1<Sig>.Compose<TS, TI, TR>(ISemantic1<Sig, TS, TI> s, Func<TI, TR> f)
     //    => SigSemantic(Kind1K<Lit>.Compose(s, f),
@@ -57,15 +59,16 @@ public interface Sig
     public interface IMergedSemantic<in TI, out TO>
         : ISemantic1<Sig, TI, TO>
         , Lit.ISemantic<TI, TO>
-        , IArithSemantic<TI, TO>
+        , Arith.ISemantic<TI, TO>
         , ILamSemantic<TI, TO>
         , IAppSemantic<TI, TO>
         , Bind.ISemantic<TI, TO>
+        , Cond.ISemantic<TI, TO>
     {
     }
 }
 
-public static class SigExtension
+public static partial class SigExtension
 {
     public static Sig.IMergedSemantic<TS, TR> Prj<TS, TR>(this ISemantic1<Sig, TS, TR> s)
         => (Sig.IMergedSemantic<TS, TR>)s;
@@ -74,10 +77,11 @@ public static class SigExtension
 
 public sealed class SigSemantic<TS, TR>(
     Lit.ISemantic<TS, TR> Lit,
-    IArithSemantic<TS, TR> Arith,
+    Arith.ISemantic<TS, TR> Arith,
     ILamSemantic<TS, TR> Lam,
     IAppSemantic<TS, TR> App,
-    Bind.ISemantic<TS, TR> Bind
+    Bind.ISemantic<TS, TR> Bind,
+    Cond.ISemantic<TS, TR> Cond
 ) : Sig.IMergedSemantic<TS, TR>
 {
     public TR LitI(int value) => Lit.LitI(value);
@@ -102,15 +106,30 @@ public sealed class SigSemantic<TS, TR>(
 
     public TR LetRec(Identifier name, TS expr, TS body)
         => Bind.LetRec(name, expr, body);
+
+    public TR If(TS c, TS t, TS fn)
+        => Cond.If(c, t, fn);
+
+    public TR Eq(TS a, TS b)
+        => Cond.Eq(a, b);
+
+    public TR Sub(TS l, TS r)
+        => Arith.Sub(l, r);
 }
 
 public sealed class SigHasBindFolder : Sig.IMergedSemantic<bool, bool>
 {
     public bool Add(bool l, bool r)
-        => l && r;
+        => l || r;
 
     public bool Apply(bool f, bool x)
-        => f && x;
+        => f || x;
+
+    public bool Eq(bool a, bool b)
+        => a || b;
+
+    public bool If(bool c, bool t, bool fn)
+        => c || t || fn;
 
     public bool Lambda(Identifier name, bool expr)
         => expr;
@@ -125,7 +144,10 @@ public sealed class SigHasBindFolder : Sig.IMergedSemantic<bool, bool>
         => false;
 
     public bool Mul(bool l, bool r)
-        => l && r;
+        => l || r;
+
+    public bool Sub(bool l, bool r)
+        => l || r;
 
     public bool Var(Identifier name)
         => false;
@@ -138,10 +160,10 @@ public sealed class BindLoweringFolder
         => Lit.B.LitI<Fix<SCore>>(value).Fix();
 
     public Fix<SCore> Add(Fix<SCore> l, Fix<SCore> r)
-        => Arith.Add(l, r).Fix();
+        => Arith.B.Add(l, r).Fix();
 
     public Fix<SCore> Mul(Fix<SCore> l, Fix<SCore> r)
-        => Arith.Mul(l, r).Fix();
+        => Arith.B.Mul(l, r).Fix();
 
     public Fix<SCore> Lambda(Identifier name, Fix<SCore> expr)
         => Lam.Lambda(name, expr).Fix();
@@ -159,4 +181,13 @@ public sealed class BindLoweringFolder
     {
         throw new NotImplementedException();
     }
+
+    public Fix<SCore> If(Fix<SCore> c, Fix<SCore> t, Fix<SCore> fn)
+        => Cond.B.If(c, t, fn).Fix();
+
+    public Fix<SCore> Eq(Fix<SCore> a, Fix<SCore> b)
+        => Cond.B.Eq(a, b).Fix();
+
+    public Fix<SCore> Sub(Fix<SCore> l, Fix<SCore> r)
+        => Arith.B.Sub(l, r).Fix();
 }

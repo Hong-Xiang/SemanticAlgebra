@@ -7,6 +7,11 @@ namespace LambdaLang.Tests.LambdaLang.Language;
 public sealed class Identifier(string name)
 {
     public string Name { get; } = name;
+
+    public override string ToString()
+    {
+        return $"${Name}";
+    }
 }
 
 public interface Lam
@@ -111,5 +116,5 @@ public sealed class LamEvalFolder<M> : ILamSemantic<IS<M, ISigValue>, IS<M, ISig
         => M.Get().Select(env =>
             env.TryGetValue(name, out var val)
                 ? val
-                : throw new EvalRuntimeException($"identifier {name.Name} not found"));
+                : throw new EvalRuntimeException($"identifier {name} not found"));
 }

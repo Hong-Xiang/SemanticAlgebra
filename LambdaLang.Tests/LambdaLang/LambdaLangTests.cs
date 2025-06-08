@@ -34,26 +34,64 @@ public class LambdaLangTests(ITestOutputHelper Output)
         Assert.False(string.IsNullOrEmpty(show));
     }
 
-    // [Fact]
+    [Fact]
+    public void IfThenElseShouldWork()
+    {
+        var S = Fix<Sig>.SyntaxFactory.Prj();
+        var e = S.If(S.Eq(S.LitI(1), S.LitI(2)), S.LitI(3), S.LitI(4));
+        var v = e.MonadicFolder().Fold<EvalS>();
+        var r = v.Run(ImmutableDictionary<Identifier, ISigValue>.Empty);
+        Assert.Equal(new SigInt(4), r.Value);
+    }
+
+    [Fact]
+    public void LazyRefTest()
+    {
+        object? c = null;
+        var lz = new Lazy<object>(() => c);
+        c = new SigInt(10);
+        Assert.Equal(new SigInt(10), lz.Value);
+    }
+
+    [Fact]
     public void FacTest()
     {
         var S = Fix<Sig>.SyntaxFactory.Prj();
         var f = new Identifier("fac");
         var n = new Identifier("n");
-        var expr = S.LetRec(f, S.Lambda(
-            n,
-            S.Var(n)
-        ), S.Apply(S.Var(f), S.LitI(3)));
-        var folder = Sig.MergeSemantic(
-            new LitEvalFolder<EvalS>(),
-            new ArithEvalFolder<EvalS>(),
-            new LamEvalFolder<EvalS>(),
-            new AppEvalFolder<EvalS>(),
-            new BindEvalFolder<EvalS>());
+        var b = S.Lambda(
+                    n,
+                    S.If(
+                        S.Eq(S.Var(n), S.LitI(0)),
+                        S.LitI(1),
+                        S.Mul(
+                            S.Var(n),
+                            S.Apply(
+                                S.Var(f),
+                                S.Sub(S.Var(n), S.LitI(1))))
+                    )
+                );
+        var d = S.LetRec(f, b, S.Var(f));
+        {
+            var e = S.LetRec(f, b, S.Apply(S.Var(f), S.LitI(0)));
+            var v = e.MonadicFolder().Fold<EvalS>();
+            var r = v.Run(ImmutableDictionary<Identifier, ISigValue>.Empty);
+            Assert.Equal(new SigInt(1), r.Value);
+        }
+        {
+            var e = S.LetRec(f, b, S.Apply(S.Var(f), S.LitI(2)));
+            var v = e.MonadicFolder().Fold<EvalS>();
+            var r = v.Run(ImmutableDictionary<Identifier, ISigValue>.Empty);
+            Assert.Equal(new SigInt(2), r.Value);
+        }
+        {
+            var e = S.LetRec(f, b, S.Apply(S.Var(f), S.LitI(3)));
+            var v = e.MonadicFolder().Fold<EvalS>();
+            var r = v.Run(ImmutableDictionary<Identifier, ISigValue>.Empty);
+            Assert.Equal(new SigInt(6), r.Value);
+        }
 
-        var val = expr.Fold<IS<EvalS, ISigValue>>(folder);
-        var res = val.Run(ImmutableDictionary<Identifier, ISigValue>.Empty);
-        Assert.Equal(new SigInt(6), res.Value);
+
     }
 
     [Fact]
@@ -125,12 +163,13 @@ public class LambdaLangTests(ITestOutputHelper Output)
         Assert.Equal(new SigInt(42), r.Value);
     }
 
-    private SCore.ISemantic<IS<EvalS, ISigValue>, IS<EvalS, ISigValue>> EvalFolder
+    private SCore.IMeragedSemantic<IS<EvalS, ISigValue>, IS<EvalS, ISigValue>> EvalFolder
         => SCore.MergeSemantic(
             new LitEvalFolder<EvalS>(),
             new ArithEvalFolder<EvalS>(),
             new LamEvalFolder<EvalS>(),
-            new AppEvalFolder<EvalS>());
+            new AppEvalFolder<EvalS>(),
+            new CondEvalFolder<EvalS>());
 
 
     [Fact]
