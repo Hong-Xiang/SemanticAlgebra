@@ -4,28 +4,27 @@ namespace SemanticAlgebra;
 
 public static class Alias1
 {
-    //public interface ISemantic<F, in TS, out TR, in T> : ISemantic1<F, TS, TR>
-    //    where F : IKind1<F>
-    //{
-    //    TR From(T value);
-    //}
-
     public interface ISpec<F, in TS, TV>
         where F : IKind1<F>
     {
         public static TV Unwrap(IS<F, TS> e) => ((D.From<F, TS, TV>)e).Value;
+
         public static ISemantic1<F, TS, TR> Compose<TI, TR>(ISemantic1<F, TS, TI> s, Func<TI, TR> f)
-              => Alias1.Compose<F, TS, TI, TR, TV>(s, f);
+            => Alias1.Compose<F, TS, TI, TR, TV>(s, f);
+
         public static ISemantic1<F, TS, IS<F, TS>> Id()
             => Alias1.Id<F, TS, TV>();
+
         public static IS<F, TS> From(TV value) => B.From<F, TS, TV>(value);
 
         public interface ISemantic<out TR> : ISemantic1<F, TS, TR>
         {
             TR From(TV value);
         }
+
         public static ISemantic<TR> Semantic<TR>(Func<TV, TR> f)
             => new AliasFuncSemantic<F, TS, TV, TR>(f);
+
         public static ISemantic<TR> Prj<TR>(ISemantic1<F, TS, TR> s)
             => (ISemantic<TR>)s;
     }

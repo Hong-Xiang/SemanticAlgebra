@@ -8,7 +8,6 @@ using Xunit;
 
 namespace LambdaLang.Tests.LambdaLang;
 
-// encoding (ImmutableDictionary<Identifier, ISigValue> -> (ISigValue, ImmutableDictionary<Identifier, ISigValue>))
 using EvalS = StateT<Identity, ImmutableDictionary<Identifier, ISigValue>>;
 
 public class LambdaLangTests(ITestOutputHelper Output)
@@ -16,21 +15,12 @@ public class LambdaLangTests(ITestOutputHelper Output)
     [Fact]
     public void LambdaExpression_GeneratesStringRepresentation()
     {
-        // Arrange & Act
         var expr = BuildLambdaExpression();
-
 
         var show = ShowAlgebra.Fold(expr);
 
-        // var show = expr.Fold<string>(Sig.MergeSemantic(
-        //     new LitShowFolder(),
-        //     new ArithShowFolder(),
-        //     new LamShowFolder(),
-        //     new AppShowFolder(),
-        //     new BindShowFolder()));
         Output.WriteLine(show);
 
-        // Assert
         Assert.False(string.IsNullOrEmpty(show));
     }
 
@@ -60,17 +50,17 @@ public class LambdaLangTests(ITestOutputHelper Output)
         var f = new Identifier("fac");
         var n = new Identifier("n");
         var b = S.Lambda(
-                    n,
-                    S.If(
-                        S.Eq(S.Var(n), S.LitI(0)),
-                        S.LitI(1),
-                        S.Mul(
-                            S.Var(n),
-                            S.Apply(
-                                S.Var(f),
-                                S.Sub(S.Var(n), S.LitI(1))))
-                    )
-                );
+            n,
+            S.If(
+                S.Eq(S.Var(n), S.LitI(0)),
+                S.LitI(1),
+                S.Mul(
+                    S.Var(n),
+                    S.Apply(
+                        S.Var(f),
+                        S.Sub(S.Var(n), S.LitI(1))))
+            )
+        );
         var d = S.LetRec(f, b, S.Var(f));
         {
             var e = S.LetRec(f, b, S.Apply(S.Var(f), S.LitI(0)));
@@ -90,8 +80,6 @@ public class LambdaLangTests(ITestOutputHelper Output)
             var r = v.Run(ImmutableDictionary<Identifier, ISigValue>.Empty);
             Assert.Equal(new SigInt(6), r.Value);
         }
-
-
     }
 
     [Fact]
@@ -108,9 +96,7 @@ public class LambdaLangTests(ITestOutputHelper Output)
         var x = new Identifier("x");
         var id = S.Lambda(x, S.Var(x));
         var e = S.Apply(id, S.LitI(42));
-        // var r = e.Fold<IS<EvalS, ISigValue>>(EvalFolder);
         var v = e.MonadicFolder().Fold<EvalS>();
-        // var (rv, _) = r.Unwrap()(ImmutableDictionary<Identifier, ISigValue>.Empty).Unwrap();
         var r = v.Run(ImmutableDictionary<Identifier, ISigValue>.Empty);
         Assert.Equal(new SigInt(42), r.Value);
     }
@@ -125,7 +111,6 @@ public class LambdaLangTests(ITestOutputHelper Output)
         var e = S.Apply(add1, S.LitI(41));
         var v = e.MonadicFolder().Fold<EvalS>();
         var r = v.Run(ImmutableDictionary<Identifier, ISigValue>.Empty);
-        // var (rv, _) = r.Unwrap()(ImmutableDictionary<Identifier, ISigValue>.Empty).Unwrap();
         Assert.Equal(new SigInt(42), r.Value);
     }
 
@@ -164,7 +149,7 @@ public class LambdaLangTests(ITestOutputHelper Output)
     }
 
     private SCore.IMeragedSemantic<IS<EvalS, ISigValue>, IS<EvalS, ISigValue>> EvalFolder
-        => SCore.MergeSemantic(
+        => SCore.CreateMergeSemantic(
             new LitEvalFolder<EvalS>(),
             new ArithEvalFolder<EvalS>(),
             new LamEvalFolder<EvalS>(),
@@ -186,24 +171,15 @@ public class LambdaLangTests(ITestOutputHelper Output)
     [Fact]
     public void LambdaExpression_EvaluatesTo44()
     {
-        // Arrange & Act
         var expr = BuildLambdaExpression();
 
         var el = expr.Fold<Fix<SCore>>(new BindLoweringFolder());
-        var S2 =
-            Fix<SCore>.SyntaxFactory.Prj();
-        var x = new Identifier("x");
-        var ef = S2.Lambda(x, S2.Var(x));
-        // var el = S2.Apply(ef, S2.LitI(3));
 
+        var v = el.Fold<IS<EvalS, ISigValue>>(EvalFolder);
 
-        var vals = el.Fold<IS<EvalS, ISigValue>>(EvalFolder);
+        var (r, _) = v.Run(ImmutableDictionary<Identifier, ISigValue>.Empty);
 
-        var (valr, _) = vals.Unwrap()(ImmutableDictionary<Identifier, ISigValue>.Empty).Unwrap();
-        var result = ((SigInt)valr).Value;
-
-        // Assert
-        Assert.Equal(44, result);
+        Assert.Equal(new SigInt(44), r);
     }
 
     [Fact]

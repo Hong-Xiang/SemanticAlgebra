@@ -10,14 +10,14 @@ public interface SCore
     , Lit, Arith, Lam, App, Cond
 {
     static ISemantic1<SCore, TS, TR> IMergedSemantic1<SCore, Lit, Arith, Lam, App, Cond>.MergeSemantic<TS, TR>(
-            ISemantic1<Lit, TS, TR> Lit,
-            ISemantic1<Arith, TS, TR> Arith,
-            ISemantic1<Lam, TS, TR> Lam,
-            ISemantic1<App, TS, TR> App,
-            ISemantic1<Cond, TS, TR> Cond
-        ) => MergeSemantic(Lit, Arith, Lam, App, Cond);
+        ISemantic1<Lit, TS, TR> Lit,
+        ISemantic1<Arith, TS, TR> Arith,
+        ISemantic1<Lam, TS, TR> Lam,
+        ISemantic1<App, TS, TR> App,
+        ISemantic1<Cond, TS, TR> Cond
+    ) => CreateMergeSemantic(Lit, Arith, Lam, App, Cond);
 
-    static IMeragedSemantic<TS, TR> MergeSemantic<TS, TR>(
+    static IMeragedSemantic<TS, TR> CreateMergeSemantic<TS, TR>(
         ISemantic1<Lit, TS, TR> Lit,
         ISemantic1<Arith, TS, TR> Arith,
         ISemantic1<Lam, TS, TR> Lam,
@@ -26,34 +26,13 @@ public interface SCore
     )
         => new SCoreSemantic<TS, TR>(Lit.Prj(), Arith.Prj(), Lam.Prj(), App.Prj(), Cond.Prj());
 
-    //static ISemantic1<SCore, TS, TR> IKind1<SCore>.Compose<TS, TI, TR>(ISemantic1<SCore, TS, TI> s, Func<TI, TR> f)
-    //    => MergeSemantic(Kind1K<Lit>.Compose(s, f),
-    //        Kind1K<Arith>.Compose(s, f),
-    //        Kind1K<Lam>.Compose(s, f),
-    //        Kind1K<App>.Compose(s, f));
-
-    //static ISemantic1<SCore, T, IS<SCore, T>> IKind1<SCore>.Id<T>()
-    //    => MergeSemantic<T, IS<SCore, T>>(
-    //        Kind1K<Lit>.Id<T>(),
-    //        Kind1K<Arith>.Id<T>(),
-    //        Kind1K<Lam>.Id<T>(),
-    //        Kind1K<App>.Id<T>()
-    //    );
-
-    //static ISemantic1<SCore, TS, IS<SCore, TR>> IFunctor<SCore>.MapS<TS, TR>(Func<TS, TR> f)
-    //    => MergeSemantic<TS, IS<SCore, TR>>(
-    //        FunctorK<Lit>.MapS(f).Prj(),
-    //        FunctorK<Arith>.MapS(f).Prj(),
-    //        FunctorK<Lam>.MapS(f).Prj(),
-    //        FunctorK<App>.MapS(f).Prj());
-
 
     public interface IMeragedSemantic<in TI, out TO>
         : ISemantic1<SCore, TI, TO>
         , Lit.ISemantic<TI, TO>
         , Arith.ISemantic<TI, TO>
-        , ILamSemantic<TI, TO>
-        , IAppSemantic<TI, TO>
+        , Lam.ISemantic<TI, TO>
+        , App.ISemantic<TI, TO>
         , Cond.ISemantic<TI, TO>
     {
     }
@@ -65,7 +44,7 @@ public static class SCoreExtension
         => (SCore.IMeragedSemantic<TS, TR>)s;
 
     public static string Show(this Fix<SCore> e)
-        => e.Fold<string>(SCore.MergeSemantic(
+        => e.Fold<string>(SCore.CreateMergeSemantic(
             new LitShowFolder(),
             new ArithShowFolder(),
             new LamShowFolder(),
@@ -77,8 +56,8 @@ public static class SCoreExtension
 public sealed class SCoreSemantic<TS, TR>(
     Lit.ISemantic<TS, TR> Lit,
     Arith.ISemantic<TS, TR> Arith,
-    ILamSemantic<TS, TR> Lam,
-    IAppSemantic<TS, TR> App,
+    Lam.ISemantic<TS, TR> Lam,
+    App.ISemantic<TS, TR> App,
     Cond.ISemantic<TS, TR> Cond
 ) : SCore.IMeragedSemantic<TS, TR>
 {
