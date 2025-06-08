@@ -14,7 +14,7 @@ public static class Prelude
     public static Func<TA, Func<TB, TC>> Curry<TA, TB, TC>(this Func<TA, TB, TC> f) => a => b => f(a, b);
 
     public static ISemantic1<TF, TS, TR> Compose<TF, TS, TI, TR>(this ISemantic1<TF, TS, TI> s, Func<TI, TR> f)
-         where TF : IKind1<TF>
+        where TF : IKind1<TF>
         => TF.Compose(s, f);
 
 
@@ -30,7 +30,6 @@ public static class Prelude
         where TF : IApplicative<TF>
     {
         var a2br = TF.ApplyS<TA, Func<TB, TR>>().ToFunc();
-        //var pf = TF.Pure<Func<TA, Func<TB, TR>>>(a => b => f(a, b));
         var pf = TF.Pure(f.Curry());
         var fb2r = a2br(pf).ToFunc()(fa);
         var b2r = TF.ApplyS<TB, TR>();
@@ -51,7 +50,7 @@ public static class Prelude
 
     public static IS<TF, T> Join<TF, T>(this IS<TF, IS<TF, T>> ft)
         where TF : IBind<TF>
-         => ft.Evaluate(TF.JoinS<T>());
+        => ft.Evaluate(TF.JoinS<T>());
 
     public static IS<TF, TR> Extend<TF, TS, TR>(this IS<TF, TS> fs, Func<IS<TF, TS>, TR> f)
         where TF : IExtend<TF>

@@ -43,32 +43,3 @@ public abstract partial class Free<F> : IMonad<Free<F>>
             => B.Roll(v.Select(vi => vi.Evaluate(this)));
     }
 }
-
-
-// FreeF f a r
-// | Pure a
-// | Roll f r
-
-
-// Fix (FreeF f a)
-// = FreeF f a (Fix (FreeF f a)
-// | Pure a
-// | Roll f (Fix (FreeF f a))
-
-// interpreter ::
-//  Functor f, Monad m =>
-//  f ~> m -> Free f ~> m
-
-
-// Exp a
-// | Var a
-// | App (Exp a) (Exp a)
-// | Lam (Exp (Maybe a))
-
-// ExpF a
-// | App (ExpF a) (ExpF a)
-// | Lam (ExpF (Maybe a))
-
-// Free f a
-// | Pure a
-// | 

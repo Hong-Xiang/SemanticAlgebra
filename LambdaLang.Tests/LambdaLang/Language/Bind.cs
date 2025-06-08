@@ -22,7 +22,6 @@ public partial interface Bind
 
     static ISemantic1<Bind, IS<M, ISigValue>, IS<M, ISigValue>> IEvalAlgebra<Bind>.Get<M>()
         => new BindEvalFolder<M>();
-
 }
 
 public sealed class BindShowFolder : Bind.ISemantic<string, string>
@@ -46,7 +45,6 @@ sealed class BindEvalFolder<M> : Bind.ISemantic<IS<M, ISigValue>, IS<M, ISigValu
     public IS<M, ISigValue> LetRec(Identifier name, IS<M, ISigValue> expr, IS<M, ISigValue> body)
         =>
             from env in M.Get()
-                //from v in EvalFix(M.Pure<ISigValue>(new SigFix<M, ISigValue>(name, e, expr)))
             from exp in expr
             let expf = exp switch
             {
@@ -65,13 +63,4 @@ sealed class BindEvalFolder<M> : Bind.ISemantic<IS<M, ISigValue>, IS<M, ISigValu
         result.Env = result.Env.Add(name, result);
         return result;
     }
-
-    public static IS<M, ISigValue> EvalFix(IS<M, ISigValue> e)
-           => e switch
-           {
-               SigFix<M, ISigValue> s =>
-                    EvalFix(M.Local(_ => s.Env.Add(s.Name, s), s.Expr)),
-               _ => e
-           };
-
 }
