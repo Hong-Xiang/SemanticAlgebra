@@ -1,9 +1,14 @@
+using System.Collections.Immutable;
 using SemanticAlgebra;
+using SemanticAlgebra.Control;
 using SemanticAlgebra.Data;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
 
-public interface App : IFunctor<App>
+public interface App
+    : IFunctor<App>
+    , IWithAlgebra<App, ShowAlgebra, string>
+    , IEvalAlgebra<App>
 {
     public static IS<App, T> Apply<T>(T f, T x) => new Apply<T>(f, x);
 
@@ -15,13 +20,18 @@ public interface App : IFunctor<App>
 
     static ISemantic1<App, TS, IS<App, TR>> IFunctor<App>.MapS<TS, TR>(Func<TS, TR> f)
         => new AppMapSemantic<TS, TR>(f);
+
+    static ISemantic1<App, string, string> IWithAlgebra<App, ShowAlgebra, string>.Get()
+        => new AppShowFolder();
+
+    static ISemantic1<App, IS<M, ISigValue>, IS<M, ISigValue>> IEvalAlgebra<App>.Get<M>()
+        => new AppEvalFolder<M>();
 }
 
 public interface IAppSemantic<in TS, out TR> : ISemantic1<App, TS, TR>
 {
     TR Apply(TS f, TS x);
 }
-
 
 static class AppExtension
 {
@@ -60,21 +70,24 @@ public sealed class AppShowFolder : IAppSemantic<string, string>
         => $"{f}({x})";
 }
 
-public sealed class AppEvalFolder : IAppSemantic<SigEvalData, SigEvalData>
+public sealed class AppEvalFolder<M> : IAppSemantic<IS<M, ISigValue>, IS<M, ISigValue>>
+    where M : IMonadState<M, ImmutableDictionary<Identifier, ISigValue>>
 {
-    public SigEvalData Apply(SigEvalData f, SigEvalData x)
-    {
-        return SigEvalState.From(s =>
-        {
-            var fr = f.Run(s);
-            var xr = x.Run(fr.State);
-            return (fr.Data, xr.Data) switch
-            {
-                (SigLam func, ISigValue arg) => (xr.State, func.F(arg)),
-                _ => throw new InvalidOperationException("Function application requires a function and an integer argument")
-            };
-        });
-    }
-
+    public IS<M, ISigValue> Apply(IS<M, ISigValue> f, IS<M, ISigValue> x)
+        => from f_ in f
+           from x_ in x
+           from r in f_ switch
+           {
+               //SigLam<M> func => func.F(x_),
+               SigClosure<M, ISigValue> c =>
+                   M.Local(s => c.Env.Add(c.Name, x_), c.Body),
+               //SigFix<M, ISigValue> f =>
+               //Apply(
+               //    M.Local(s => f.Env.Add(f.Name, f), f.Expr),
+               //    M.Pure(x_)
+               //    ),
+               _ => throw new EvalRuntimeException(
+                   $"Function application requires a function and an value argument, got {f_} {x_}")
+           }
+           select r;
 }
-

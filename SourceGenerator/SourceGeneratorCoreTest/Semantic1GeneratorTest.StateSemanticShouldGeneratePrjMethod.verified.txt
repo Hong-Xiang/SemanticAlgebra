@@ -1,0 +1,7 @@
+﻿namespace SemanticAlgebra.State
+{
+    public static class StateExtensions
+    {
+        public static global::SemanticAlgebra.State.State.ISemantic<TS, TR> Prj<TS, TR>(this global::SemanticAlgebra.ISemantic1<global::SemanticAlgebra.State.State, TS, TR> s) => (global::SemanticAlgebra.State.State.ISemantic<TS, TR>)s;
+    }
+}

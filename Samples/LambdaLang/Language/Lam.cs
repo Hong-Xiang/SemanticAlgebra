@@ -49,7 +49,6 @@ sealed record class Lambda<T>(Identifier Name, T Expr)
         => semantic.Prj().Lambda(Name, Expr);
 }
 
-
 sealed class LamComposeSemantic<TS, TI, TR>(ILamSemantic<TS, TI> S, Func<TI, TR> F) : ILamSemantic<TS, TR>
 {
     public TR Lambda(Identifier name, TS expr)
@@ -67,8 +66,6 @@ sealed class LamIdSemantic<T>() : ILamSemantic<T, IS<Lam, T>>
     public IS<Lam, T> Var(Identifier name)
         => Lam.Var<T>(name);
 }
-
-
 
 sealed class LamMapSemantic<TS, TR>(Func<TS, TR> F) : ILamSemantic<TS, IS<Lam, TR>>
 {
@@ -94,7 +91,7 @@ sealed class LamEvalFolder : ILamSemantic<SigEvalData, SigEvalData>
     {
         return SigEvalState.From(s =>
         {
-            return (s, new SigLam(val =>
+            return (s, (ISigValue)new SigLam(val =>
             {
                 var s_ = s.Add(name, val);
                 var r = expr.Run(s_);

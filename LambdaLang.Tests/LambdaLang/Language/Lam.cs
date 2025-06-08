@@ -1,4 +1,5 @@
-﻿using SemanticAlgebra.Data;
+﻿using System.Collections.Immutable;
+using SemanticAlgebra.Data;
 using SemanticAlgebra;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
@@ -6,9 +7,17 @@ namespace LambdaLang.Tests.LambdaLang.Language;
 public sealed class Identifier(string name)
 {
     public string Name { get; } = name;
+
+    public override string ToString()
+    {
+        return $"${Name}";
+    }
 }
 
-public interface Lam : IFunctor<Lam>
+public interface Lam
+    : IFunctor<Lam>
+    , IWithAlgebra<Lam, ShowAlgebra, string>
+    , IEvalAlgebra<Lam>
 {
     public static IS<Lam, T> Var<T>(Identifier name) => new Var<T>(name);
     public static IS<Lam, T> Lambda<T>(Identifier name, T expr) => new Lambda<T>(name, expr);
@@ -21,6 +30,13 @@ public interface Lam : IFunctor<Lam>
 
     static ISemantic1<Lam, TS, IS<Lam, TR>> IFunctor<Lam>.MapS<TS, TR>(Func<TS, TR> f)
         => new LamMapSemantic<TS, TR>(f);
+
+
+    static ISemantic1<Lam, string, string> IWithAlgebra<Lam, ShowAlgebra, string>.Get()
+        => new LamShowFolder();
+
+    static ISemantic1<Lam, IS<M, ISigValue>, IS<M, ISigValue>> IEvalAlgebra<Lam>.Get<M>()
+        => new LamEvalFolder<M>();
 }
 
 public interface ILamSemantic<in TS, out TR> : ISemantic1<Lam, TS, TR>
@@ -49,7 +65,6 @@ sealed record class Lambda<T>(Identifier Name, T Expr)
         => semantic.Prj().Lambda(Name, Expr);
 }
 
-
 public sealed class LamComposeSemantic<TS, TI, TR>(ILamSemantic<TS, TI> S, Func<TI, TR> F) : ILamSemantic<TS, TR>
 {
     public TR Lambda(Identifier name, TS expr)
@@ -67,8 +82,6 @@ public sealed class LamIdSemantic<T>() : ILamSemantic<T, IS<Lam, T>>
     public IS<Lam, T> Var(Identifier name)
         => Lam.Var<T>(name);
 }
-
-
 
 public sealed class LamMapSemantic<TS, TR>(Func<TS, TR> F) : ILamSemantic<TS, IS<Lam, TR>>
 {
@@ -88,20 +101,20 @@ public sealed class LamShowFolder : ILamSemantic<string, string>
         => name.Name;
 }
 
-public sealed class LamEvalFolder : ILamSemantic<SigEvalData, SigEvalData>
+public sealed class LamEvalFolder<M> : ILamSemantic<IS<M, ISigValue>, IS<M, ISigValue>>
+    where M : IMonadState<M, ImmutableDictionary<Identifier, ISigValue>>
 {
-    public SigEvalData Lambda(Identifier name, SigEvalData expr)
-    {
-        return SigEvalState.From(s =>
-        {
-            return (s, new SigLam(val =>
-            {
-                var s_ = s.Add(name, val);
-                var r = expr.Run(s_);
-                return r.Data;
-            }));
-        });
-    }
+    public IS<M, ISigValue> Lambda(Identifier name, IS<M, ISigValue> expr)
+        // => from cenv in M.Get()
+        //    select (ISigValue)new SigLam<M>(val =>
+        //        expr.WithLocal<M, ImmutableDictionary<Identifier, ISigValue>, ISigValue>(_ =>
+        //            cenv.Add(name, val)));
+        => from e in M.Get()
+           select (ISigValue)(new SigClosure<M, ISigValue>(name, e, expr));
 
-    public SigEvalData Var(Identifier name) => SigEvalState.From(s => (s, s[name]));
+    IS<M, ISigValue> ILamSemantic<IS<M, ISigValue>, IS<M, ISigValue>>.Var(Identifier name)
+        => M.Get().Select(env =>
+            env.TryGetValue(name, out var val)
+                ? val
+                : throw new EvalRuntimeException($"identifier {name} not found"));
 }

@@ -17,12 +17,18 @@ public record class Semantic1Definition(
     INamedTypeSymbol BrandSymbol)
 {
     public IdentifierNameSyntax TSName { get; } =
-        IdentifierName(ConcreteSemanticSyntax.TypeParameterList?.Parameters[0].Identifier ?? Identifier("TS"));
+        IdentifierName(ConcreteSemanticSyntax.TypeParameterList?.Parameters[^2].Identifier ?? Identifier("TS"));
 
     public IdentifierNameSyntax TRName { get; } =
-        IdentifierName(ConcreteSemanticSyntax.TypeParameterList?.Parameters[1].Identifier ?? Identifier("TR"));
+        IdentifierName(ConcreteSemanticSyntax.TypeParameterList?.Parameters[^1].Identifier ?? Identifier("TR"));
 
-    public TypeSyntax BrandName { get; } = IdentifierName(BrandSymbol.Name);
+    public TypeSyntax BrandName { get; } =
+        BrandSymbol.Arity == 0
+            ? IdentifierName(BrandSymbol.Name)
+            : GenericName(Identifier(BrandSymbol.Name))
+                .AddTypeArgumentListArguments(
+                    [..BrandSymbol.TypeParameters.Select(p => IdentifierName(p.Name))]
+                );
 
     public TypeSyntax ExpressionSyntax()
         => ExpressionSyntax(TSName);
@@ -90,11 +96,33 @@ public record class Semantic1Definition(
         var methodTypeParameters = (ConcreteSemanticSyntax.TypeParameterList?.Parameters ?? [])
             .Select(t => t.RemoveVariance());
         var method = MethodDeclaration(concreteSemantic, "Prj")
+                     .AddTypeParameterListParameters([
+                         ..BrandSymbol.TypeParameters.Select(p => TypeParameter(Identifier(p.Name)))
+                     ])
                      .AddTypeParameterListParameters([.. methodTypeParameters])
                      .AddParameterListParameters(
                          Parameter(s)
                              .WithType(abstractSemantic)
                              .AddModifiers(Token(SyntaxKind.ThisKeyword))
+                     )
+                     .AddConstraintClauses(
+                         [
+                             ..BrandSymbol.DeclaringSyntaxReferences
+                                          .Select(d => (TypeDeclarationSyntax)d.GetSyntax())
+                                          .SelectMany(c =>
+                                              c.ConstraintClauses.Select(cc =>
+                                                  cc.WithConstraints([
+                                                      ..cc.Constraints.Select(c_ => c_ switch
+                                                      {
+                                                          TypeConstraintSyntax ts =>
+                                                              SemanticModel.GetSymbolInfo(ts.Type).Symbol is
+                                                                  INamedTypeSymbol ss
+                                                                  ? TypeConstraint(ss.ToReferenceName())
+                                                                  : c_,
+                                                          _ => c_
+                                                      })
+                                                  ])))
+                         ]
                      )
                      .AddModifiers(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.StaticKeyword))
                      .WithExpressionBody(
@@ -134,9 +162,12 @@ public record class Semantic1Definition(
                     Token(SyntaxKind.StaticKeyword))
                 .AddMembers(
                     [
-                        ..ConcreteSemanticSymbol.GetMembers()
-                                                .OfType<IMethodSymbol>()
-                                                .Select(CarrierDefinitionSyntax)
+                        ..ConcreteSemanticSymbol
+                          // .AllInterfaces
+                          // .SelectMany(t => t.GetMembers())
+                          .GetMembers()
+                          .OfType<IMethodSymbol>()
+                          .Select(CarrierDefinitionSyntax)
                     ]
                 )
         );
@@ -195,9 +226,12 @@ public record class Semantic1Definition(
                     Token(SyntaxKind.StaticKeyword))
                 .AddMembers(
                     [
-                        ..ConcreteSemanticSymbol.GetMembers()
-                                                .OfType<IMethodSymbol>()
-                                                .Select(CarrierBuilderSyntax)
+                        ..ConcreteSemanticSymbol
+                          // .AllInterfaces
+                          // .SelectMany(t => t.GetMembers())
+                          .GetMembers()
+                          .OfType<IMethodSymbol>()
+                          .Select(CarrierBuilderSyntax)
                     ]
                 )
         );

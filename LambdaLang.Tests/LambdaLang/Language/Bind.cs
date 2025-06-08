@@ -1,72 +1,77 @@
+using System.Collections.Immutable;
 using SemanticAlgebra;
 using SemanticAlgebra.Data;
+using SemanticAlgebra.Syntax;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
 
-public interface Bind : IFunctor<Bind>
+public partial interface Bind
+    : IFunctor<Bind>
+    , IWithAlgebra<Bind, ShowAlgebra, string>
+    , IEvalAlgebra<Bind>
 {
-    public static IS<Bind, T> Let<T>(Identifier name, T expr, T body) => new Let<T>(name, expr, body);
+    [Semantic1]
+    public interface ISemantic<in TS, out TR> : ISemantic1<Bind, TS, TR>
+    {
+        TR Let(Identifier name, TS expr, TS body);
+        TR LetRec(Identifier name, TS expr, TS body);
+    }
 
-    static ISemantic1<Bind, TS, TR> IKind1<Bind>.Compose<TS, TI, TR>(ISemantic1<Bind, TS, TI> s, Func<TI, TR> f)
-        => new BindComposeSemantic<TS, TI, TR>(s.Prj(), f);
+    static ISemantic1<Bind, string, string> IWithAlgebra<Bind, ShowAlgebra, string>.Get()
+        => new BindShowFolder();
 
-    static ISemantic1<Bind, T, IS<Bind, T>> IKind1<Bind>.Id<T>()
-        => new BindIdSemantic<T>();
+    static ISemantic1<Bind, IS<M, ISigValue>, IS<M, ISigValue>> IEvalAlgebra<Bind>.Get<M>()
+        => new BindEvalFolder<M>();
 
-    static ISemantic1<Bind, TS, IS<Bind, TR>> IFunctor<Bind>.MapS<TS, TR>(Func<TS, TR> f)
-        => new BindMapSemantic<TS, TR>(f);
 }
 
-public interface IBindSemantic<in TS, out TR> : ISemantic1<Bind, TS, TR>
+public sealed class BindShowFolder : Bind.ISemantic<string, string>
 {
-    TR Let(Identifier name, TS expr, TS body);
-}
+    public string LetRec(Identifier name, string expr, string body)
+        => $"(letrec {name.Name} = {expr} in {body})";
 
-public sealed class BindShowFolder : IBindSemantic<string, string>
-{
-    string IBindSemantic<string, string>.Let(Identifier name, string expr, string body)
+
+    string Bind.ISemantic<string, string>.Let(Identifier name, string expr, string body)
         => $"(let {name.Name} = {expr} in {body})";
 }
 
-public sealed class BindEvalFolder : IBindSemantic<SigEvalData, SigEvalData>
+sealed class BindEvalFolder<M> : Bind.ISemantic<IS<M, ISigValue>, IS<M, ISigValue>>
+    where M : IMonadState<M, ImmutableDictionary<Identifier, ISigValue>>
 {
-    public SigEvalData Let(Identifier name, SigEvalData expr, SigEvalData body)
-        => SigEvalState.From(s =>
-        {
-            var e = expr.Run(s);
-            var s2 = s.Add(name, e.Data);
-            var br = body.Run(s2);
-            return (br.State, br.Data);
-        });
-}
+    public IS<M, ISigValue> Let(Identifier name, IS<M, ISigValue> expr, IS<M, ISigValue> body)
+        => from v in expr
+           from r in M.Local(s => s.Add(name, v), body)
+           select r;
 
-static class BindExtension
-{
-    public static IBindSemantic<TS, TR> Prj<TS, TR>(this ISemantic1<Bind, TS, TR> s)
-        => (IBindSemantic<TS, TR>)s;
-}
+    public IS<M, ISigValue> LetRec(Identifier name, IS<M, ISigValue> expr, IS<M, ISigValue> body)
+        =>
+            from env in M.Get()
+                //from v in EvalFix(M.Pure<ISigValue>(new SigFix<M, ISigValue>(name, e, expr)))
+            from exp in expr
+            let expf = exp switch
+            {
+                SigClosure<M, ISigValue> c => GetRecClosure(name, c),
+                _ => throw new EvalRuntimeException("let-rec only support lambda definition")
+            }
+            from r in M.Local(s => s.Add(name, expf), body)
+            select r;
 
-sealed record class Let<T>(Identifier Name, T Expr, T Body)
-    : IS<Bind, T>
-{
-    public TR Evaluate<TR>(ISemantic1<Bind, T, TR> semantic)
-        => semantic.Prj().Let(Name, Expr, Body);
-}
+    public static SigClosure<M, ISigValue> GetRecClosure(
+        Identifier name,
+        SigClosure<M, ISigValue> original
+    )
+    {
+        var result = new SigClosure<M, ISigValue>(original.Name, original.Env, original.Body);
+        result.Env = result.Env.Add(name, result);
+        return result;
+    }
 
-public sealed class BindComposeSemantic<TS, TI, TR>(IBindSemantic<TS, TI> S, Func<TI, TR> F) : IBindSemantic<TS, TR>
-{
-    public TR Let(Identifier name, TS expr, TS body)
-        => F(S.Let(name, expr, body));
-}
+    public static IS<M, ISigValue> EvalFix(IS<M, ISigValue> e)
+           => e switch
+           {
+               SigFix<M, ISigValue> s =>
+                    EvalFix(M.Local(_ => s.Env.Add(s.Name, s), s.Expr)),
+               _ => e
+           };
 
-public sealed class BindIdSemantic<T>() : IBindSemantic<T, IS<Bind, T>>
-{
-    public IS<Bind, T> Let(Identifier name, T expr, T body)
-        => Bind.Let(name, expr, body);
-}
-
-public sealed class BindMapSemantic<TS, TR>(Func<TS, TR> F) : IBindSemantic<TS, IS<Bind, TR>>
-{
-    public IS<Bind, TR> Let(Identifier name, TS expr, TS body)
-        => Bind.Let(name, F(expr), F(body));
 }

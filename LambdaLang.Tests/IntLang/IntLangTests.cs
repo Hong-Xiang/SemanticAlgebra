@@ -1,4 +1,4 @@
-using SemanticAlgebra.Fix;
+using Xunit;
 using Xunit.Abstractions;
 
 namespace LambdaLang.Tests.IntLang;
@@ -19,5 +19,6 @@ public class IntLangTests(ITestOutputHelper Output)
         
         // Assert
         Assert.Equal(80, fv);
+        Output.WriteLine(sf.ToString());
     }
 }

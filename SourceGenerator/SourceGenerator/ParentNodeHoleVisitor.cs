@@ -8,6 +8,12 @@ namespace SemanticAlgebra.SourceGenerator;
 
 public sealed class ParentNodeHoleVisitor(MemberDeclarationSyntax Hole) : CSharpSyntaxVisitor<SyntaxNode>
 {
+    public override SyntaxNode? VisitInterfaceDeclaration(InterfaceDeclarationSyntax node) =>
+        node.WithMembers([Hole])
+            .WithAttributeLists([])
+            .WithBaseList(null)
+            .WithConstraintClauses([])
+            .WithoutTrivia();
     public override SyntaxNode? VisitClassDeclaration(ClassDeclarationSyntax node) =>
         node.WithMembers([Hole])
             .WithAttributeLists([])

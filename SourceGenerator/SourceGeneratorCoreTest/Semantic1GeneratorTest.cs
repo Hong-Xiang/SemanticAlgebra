@@ -11,11 +11,39 @@ namespace SourceGeneratorCoreTest;
 public sealed class Semantic1GeneratorTest(ITestOutputHelper Output)
 {
     [Fact]
-    public Task OptionSemanticShouldGeneratePrjMethod()
+    public void OptionSemanticShouldGeneratePrjMethod()
     {
         var compilation = CSharpCompilation.Create(
             $"{nameof(OptionSemanticShouldGeneratePrjMethod)}.dll",
             [CSharpSyntaxTree.ParseText(Utility.OptionBrandCode, path: "Option.cs")],
+            [
+                ..ReferenceAssemblies.Net80,
+                MetadataReference.CreateFromFile(typeof(IKind1<>).Assembly.Location),
+            ]
+        );
+
+
+        var generator = new Semantic1Generator();
+        var driver = CSharpGeneratorDriver.Create(generator.AsSourceGenerator())
+                                          .RunGenerators(compilation);
+        var runResult = driver.GetRunResult();
+        var outputs = runResult.Results;
+
+        var generatedSources = outputs.SelectMany(r => r.GeneratedSources).ToList();
+        Assert.NotEmpty(generatedSources);
+        foreach (var generatedSource in generatedSources)
+        {
+            Output.WriteLine($"{generatedSource.HintName}: =====");
+            Output.WriteLine(generatedSource.SourceText.ToString());
+        }
+    }
+
+    [Fact]
+    public Task StateSemanticShouldGeneratePrjMethod()
+    {
+        var compilation = CSharpCompilation.Create(
+            $"{nameof(StateSemanticShouldGeneratePrjMethod)}.dll",
+            [CSharpSyntaxTree.ParseText(Utility.State2BrandCode, path: "State.cs")],
             [
                 ..ReferenceAssemblies.Net80,
                 MetadataReference.CreateFromFile(typeof(IKind1<>).Assembly.Location),

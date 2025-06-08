@@ -69,11 +69,12 @@ internal sealed class Semantic1ComposeSemanticGenerator : ISemanticImplementatio
 
     public MethodDeclarationSyntax GenerateSemanticUsageBrandMethod()
     {
+        var k1s = Definition.BrandSymbol.AllInterfaces.Single(x => x.Name == "IKind1");
         return MethodDeclaration(
                    ImplementationMethod.ReturnType.ToReferenceName(),
                    BrandMethodName)
-               .AddModifiers(Token(SyntaxKind.PublicKeyword),
-                   Token(SyntaxKind.StaticKeyword))
+               .AddModifiers(Token(SyntaxKind.StaticKeyword))
+               .WithExplicitInterfaceSpecifier(ExplicitInterfaceSpecifier(k1s.ToReferenceName()))
                .AddTypeParameterListParameters(TypeParameters)
                .AddParameterListParameters(
                    S.WithType(ImplementationMethod.Parameters[0].Type.ToReferenceName())
@@ -102,7 +103,7 @@ internal sealed class Semantic1ComposeSemanticGenerator : ISemanticImplementatio
     }
 
     public bool ShouldGenerateSemanticUsageBrandMethod()
-        => Definition.BrandSymbol.MemberNames.All(n => n != "Id");
+        => Definition.BrandSymbol.MemberNames.All(n => n != BrandMethodName);
 
     MethodDeclarationSyntax MethodDefinitionSyntax(IMethodSymbol symbol)
     {

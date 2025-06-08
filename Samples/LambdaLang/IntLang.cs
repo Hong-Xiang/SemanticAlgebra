@@ -4,7 +4,6 @@ using SemanticAlgebra.Fix;
 
 namespace LambdaLang;
 
-
 public sealed class IntLang : IFunctor<IntLang>
 {
     public static IS<IntLang, T> LitI<T>(int value) => new LitI<T>(value);
@@ -13,6 +12,7 @@ public sealed class IntLang : IFunctor<IntLang>
 
     public static ISemantic1<IntLang, T, IS<IntLang, T>> Id<T>()
         => new IntLangIdSemantic<T>();
+
     public static ISemantic1<IntLang, TS, TR> Compose<TS, TI, TR>(ISemantic1<IntLang, TS, TI> s, Func<TI, TR> f)
         => new IntLangComposeSemantic<TS, TI, TR>(s.Prj(), f);
 
