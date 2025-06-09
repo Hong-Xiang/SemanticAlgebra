@@ -7,10 +7,10 @@ namespace LambdaLang.Tests.LambdaLang.Language;
 
 public partial interface Arith
     : IFunctor<Arith>
-    , IWithAlgebra<Arith, ShowAlgebra, string>
+    , IImplements<Arith, ShowAlgebra, string>
     , IEvalAlgebra<Arith>
 {
-    static ISemantic1<Arith, string, string> IWithAlgebra<Arith, ShowAlgebra, string>.Get()
+    static ISemantic1<Arith, string, string> IImplements<Arith, ShowAlgebra, string>.Get()
         => new ArithShowFolder();
 
     static ISemantic1<Arith, IS<M, ISigValue>, IS<M, ISigValue>> IEvalAlgebra<Arith>.Get<M>()

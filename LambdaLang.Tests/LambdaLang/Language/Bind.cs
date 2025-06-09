@@ -7,7 +7,7 @@ namespace LambdaLang.Tests.LambdaLang.Language;
 
 public partial interface Bind
     : IFunctor<Bind>
-    , IWithAlgebra<Bind, ShowAlgebra, string>
+    , IImplements<Bind, ShowAlgebra, string>
     , IEvalAlgebra<Bind>
 {
     [Semantic1]
@@ -17,7 +17,7 @@ public partial interface Bind
         TR LetRec(Identifier name, TS expr, TS body);
     }
 
-    static ISemantic1<Bind, string, string> IWithAlgebra<Bind, ShowAlgebra, string>.Get()
+    static ISemantic1<Bind, string, string> IImplements<Bind, ShowAlgebra, string>.Get()
         => new BindShowFolder();
 
     static ISemantic1<Bind, IS<M, ISigValue>, IS<M, ISigValue>> IEvalAlgebra<Bind>.Get<M>()

@@ -9,7 +9,7 @@ namespace LambdaLang.Tests.LambdaLang.Language;
 public interface Sig
     : IFunctor<Sig>
     , IMergedSemantic1<Sig, Lit, Arith, Lam, App, Bind, Cond>
-    , IMergedSemantic1WithAlgebra<Sig, ShowAlgebra, string, Lit, Arith, Lam, App, Bind, Cond>
+    , IMergedSemantic1Implements<Sig, ShowAlgebra, string, Lit, Arith, Lam, App, Bind, Cond>
     , IMergedSemantic1EvalAlgebra<Sig, Lit, Arith, Lam, App, Bind, Cond>
     , Lit, Arith, Lam, App, Bind, Cond
 {

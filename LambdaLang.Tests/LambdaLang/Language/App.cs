@@ -8,7 +8,7 @@ namespace LambdaLang.Tests.LambdaLang.Language;
 
 public partial interface App
     : IFunctor<App>
-    , IWithAlgebra<App, ShowAlgebra, string>
+    , IImplements<App, ShowAlgebra, string>
     , IEvalAlgebra<App>
 {
     [Semantic1]
@@ -17,7 +17,7 @@ public partial interface App
         TR Apply(TS f_, TS x);
     }
 
-    static ISemantic1<App, string, string> IWithAlgebra<App, ShowAlgebra, string>.Get()
+    static ISemantic1<App, string, string> IImplements<App, ShowAlgebra, string>.Get()
         => new AppShowFolder();
 
     static ISemantic1<App, IS<M, ISigValue>, IS<M, ISigValue>> IEvalAlgebra<App>.Get<M>()

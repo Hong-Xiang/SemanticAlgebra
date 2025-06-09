@@ -7,7 +7,7 @@ namespace LambdaLang.Tests.LambdaLang.Language;
 
 public partial interface Cond
     : IFunctor<Cond>
-    , IWithAlgebra<Cond, ShowAlgebra, string>
+    , IImplements<Cond, ShowAlgebra, string>
     , IEvalAlgebra<Cond>
 {
     [Semantic1]
@@ -18,7 +18,7 @@ public partial interface Cond
         TR Eq(TS a, TS b);
     }
 
-    static ISemantic1<Cond, string, string> IWithAlgebra<Cond, ShowAlgebra, string>.Get()
+    static ISemantic1<Cond, string, string> IImplements<Cond, ShowAlgebra, string>.Get()
         => new CondShowFolder();
 
     static ISemantic1<Cond, IS<M, ISigValue>, IS<M, ISigValue>> IEvalAlgebra<Cond>.Get<M>()

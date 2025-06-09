@@ -7,7 +7,7 @@ namespace LambdaLang.Tests.LambdaLang.Language;
 
 public partial interface Lit
     : IFunctor<Lit>
-    , IWithAlgebra<Lit, ShowAlgebra, string>
+    , IImplements<Lit, ShowAlgebra, string>
     , IEvalAlgebra<Lit>
 {
     [Semantic1]
@@ -33,7 +33,7 @@ public partial interface Lit
     //static ISemantic1<Lit, TS, IS<Lit, TR>> IFunctor<Lit>.MapS<TS, TR>(Func<TS, TR> f)
     //    => new LitMapSemantic<TS, TR>();
 
-    static ISemantic1<Lit, string, string> IWithAlgebra<Lit, ShowAlgebra, string>.Get()
+    static ISemantic1<Lit, string, string> IImplements<Lit, ShowAlgebra, string>.Get()
         => new LitShowFolder();
     static ISemantic1<Lit, IS<M, ISigValue>, IS<M, ISigValue>> IEvalAlgebra<Lit>.Get<M>()
         => new LitEvalFolder<M>();

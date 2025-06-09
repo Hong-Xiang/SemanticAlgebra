@@ -17,7 +17,7 @@ public sealed class Identifier(string name)
 
 public partial interface Lam
     : IFunctor<Lam>
-    , IWithAlgebra<Lam, ShowAlgebra, string>
+    , IImplements<Lam, ShowAlgebra, string>
     , IEvalAlgebra<Lam>
 {
     // public static IS<Lam, T> Var<T>(Identifier name) => new Var<T>(name);
@@ -33,7 +33,7 @@ public partial interface Lam
     //     => new LamMapSemantic<TS, TR>(f);
     //
 
-    static ISemantic1<Lam, string, string> IWithAlgebra<Lam, ShowAlgebra, string>.Get()
+    static ISemantic1<Lam, string, string> IImplements<Lam, ShowAlgebra, string>.Get()
         => new LamShowFolder();
 
     static ISemantic1<Lam, IS<M, ISigValue>, IS<M, ISigValue>> IEvalAlgebra<Lam>.Get<M>()

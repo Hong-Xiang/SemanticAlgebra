@@ -31,6 +31,9 @@ public abstract class StateT<M, S> : IMonadState<StateT<M, S>, S>
     public static IS<StateT<M, S>, T> Pure<T>(T x)
         => B.From(s => M.Pure((x, s)));
 
+    public static IS<StateT<M, S>, T> Lift<T>(IS<M, T> x)
+        => B.From(s => x.Select(v => (v, s)));
+
     public static ISemantic1<StateT<M, S>, IS<StateT<M, S>, T>, IS<StateT<M, S>, T>> JoinS<T>()
         => IAlias1<IS<StateT<M, S>, T>>.Semantic(fs => B.From(s
             => from x in fs(s)
@@ -73,4 +76,8 @@ public static class State<S>
 
     public static IS<StateT<Identity, S>, S> Get()
         => StateT<Identity, S>.Get();
+
+    public static IS<StateT<M, S>, T> Lift<M, T>(IS<M, T> e)
+        where M : IMonad<M>
+        => StateT<M, S>.Lift(e);
 }
