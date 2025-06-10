@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using SemanticAlgebra;
 using SemanticAlgebra.Control;
 using SemanticAlgebra.Data;
+using SemanticAlgebra.Free;
 using SemanticAlgebra.Syntax;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
@@ -39,6 +40,24 @@ public sealed class AppEvalFolder<M> : App.ISemantic<IS<M, ISigValue>, IS<M, ISi
            from r in f_ switch
            {
                SigClosure<M, ISigValue> c =>
+                   M.Local(s => c.Env.Add(c.Name, x_), c.Body),
+               _ => throw new EvalRuntimeException(
+                   $"Function application requires a function and an value argument, got {f_} {x_}")
+           }
+           select r;
+}
+
+public sealed class AppFreeFolder
+    : App.ISemantic<
+    IS<Free<EvalF>, ISigValue>,
+    IS<Free<EvalF>, ISigValue>>
+{
+    public IS<Free<EvalF>, ISigValue> Apply(IS<Free<EvalF>, ISigValue> f_, IS<Free<EvalF>, ISigValue> x)
+        => from f in f_
+           from x_ in x
+           from r in f switch
+           {
+               SigClosureF<EvalF, ISigValue> c =>
                    M.Local(s => c.Env.Add(c.Name, x_), c.Body),
                _ => throw new EvalRuntimeException(
                    $"Function application requires a function and an value argument, got {f_} {x_}")

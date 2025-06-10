@@ -19,7 +19,7 @@ public partial interface Scf : IFunctor<Scf>
     static ISemantic1<Scf,
                IS<M, string>,
                IS<M, string>>
-           IImplementsM<Scf, ShowState, string>.Get_<M>()
+           IImplementsM<Scf, ShowState, string>.GetS<M>()
            => new ShowSemantic<M>();
 
     sealed class ShowSemantic<M>

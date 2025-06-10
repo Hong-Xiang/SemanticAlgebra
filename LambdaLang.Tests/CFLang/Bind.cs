@@ -23,34 +23,34 @@ public partial interface Bind
           ISemantic1<Bind,
               IS<M, string>,
               IS<M, string>>
-          IImplementsM<Bind, ShowState, string>.Get<M>()
+          IImplementsM<Bind, ShowState, string>.GetS<M>()
           => new ShowSemantic<M>();
 
     sealed class ShowSemantic<M>
-        : ISemantic<IS<StateT<M, ShowState>, string>, IS<StateT<M, ShowState>, string>>
-        where M : IMonadState<M>
+        : ISemantic<IS<M, string>, IS<M, string>>
+        where M : IMonadState<M, ShowState>
     {
-        public IS<StateT<M, ShowState>, string> LetL(Label name, IS<StateT<M, ShowState>, string> value, IS<StateT<M, ShowState>, string> next)
+        public IS<M, string> LetL(Label name, IS<M, string> value, IS<M, string> next)
         {
             throw new NotImplementedException();
         }
 
-        public IS<StateT<M, ShowState>, string> LetV(Value name, IS<StateT<M, ShowState>, string> value, IS<StateT<M, ShowState>, string> next)
+        public IS<M, string> LetV(Value name, IS<M, string> value, IS<M, string> next)
         {
             throw new NotImplementedException();
         }
 
-        public IS<StateT<M, ShowState>, string> Reg(Label name)
+        public IS<M, string> Reg(Label name)
         {
             throw new NotImplementedException();
         }
 
-        public IS<StateT<M, ShowState>, string> SeqV(IS<StateT<M, ShowState>, string> step, IS<StateT<M, ShowState>, string> next)
+        public IS<M, string> SeqV(IS<M, string> step, IS<M, string> next)
         {
             throw new NotImplementedException();
         }
 
-        public IS<StateT<M, ShowState>, string> Val(Value name)
+        public IS<M, string> Val(Value name)
         {
             throw new NotImplementedException();
         }

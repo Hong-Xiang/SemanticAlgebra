@@ -20,7 +20,7 @@ public partial interface Lit
         ISemantic1<Lit,
             IS<M, string>,
             IS<M, string>>
-        IImplementsM<Lit, ShowState, string>.Get_<M>()
+        IImplementsM<Lit, ShowState, string>.GetS<M>()
         => new ShowSemantic<M>();
 
     sealed class ShowSemantic<M>

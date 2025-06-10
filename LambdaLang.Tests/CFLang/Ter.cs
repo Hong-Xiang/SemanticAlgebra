@@ -21,7 +21,7 @@ public partial interface Ter
   static ISemantic1<Ter,
                IS<M, string>,
                IS<M, string>>
-           IImplementsM<Ter, ShowState, string>.Get_<M>()
+           IImplementsM<Ter, ShowState, string>.GetS<M>()
            => new ShowSemantic<M>();
 
     sealed class ShowSemantic<M>

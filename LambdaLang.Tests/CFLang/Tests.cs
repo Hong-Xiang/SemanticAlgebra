@@ -306,7 +306,7 @@ public class Tests(ITestOutputHelper Output)
         let @a = arg i32 in
         let @c = loc i32 in
         let @r = loc i32 in
-        <e>():
+        block():
             let ^17 = block():
                 %4 = ldloc @r
                 ret %4 

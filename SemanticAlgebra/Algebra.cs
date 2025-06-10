@@ -22,12 +22,12 @@ public interface IImplements<F, TAlg, T> : IFunctor<F>
 public interface IImplementsM<F, S, T> : IFunctor<F>
     where F : IImplementsM<F, S, T>
 {
-    static abstract ISemantic1<F, IS<M, T>, IS<M, T>> Get_<M>()
+    static abstract ISemantic1<F, IS<M, T>, IS<M, T>> GetS<M>()
         where M : IMonadState<M, S>;
 
     public static ISemantic1<F, IS<M, T>, IS<M, T>> Get<M>()
         where M : IMonadState<M, S>
-        => F.Get_<M>();
+        => F.GetS<M>();
 
 }
 

@@ -42,4 +42,12 @@ public abstract partial class Free<F> : IMonad<Free<F>>
         public IS<Free<F>, T> Roll(IS<F, IS<Free<F>, IS<Free<F>, T>>> v)
             => B.Roll(v.Select(vi => vi.Evaluate(this)));
     }
+
+}
+
+public static class FreeMonadExtension
+{
+    public static IS<Free<F>, T> LiftF<F, T>(this IS<F, T> e)
+        where F : IFunctor<F>
+        => Free<F>.B.Roll(e.Select(Free<F>.B.Pure));
 }

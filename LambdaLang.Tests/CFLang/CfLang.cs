@@ -50,17 +50,14 @@ public partial interface CfLang
     static ISemantic1<CfLang,
                  IS<M, string>,
                  IS<M, string>>
-             IImplementsM<CfLang, ShowState, string>.Get_<M>()
+             IImplementsM<CfLang, ShowState, string>.GetS<M>()
              => CreateMergeSemantic(
                  IImplementsM<Scf, ShowState, string>.Get<M>(),
                  IImplementsM<Ter, ShowState, string>.Get<M>(),
                  IImplementsM<Lit, ShowState, string>.Get<M>(),
-                 null,
-                 //IImplementsM<Bind, ShowState, string>.GetS<StateT<Identity, ShowState>>(),
-                 null,
-                 //IImplementsM<Arith, ShowState, string>.GetS<StateT<Identity, ShowState>>(),
-                 //IImplementsM<Ref, ShowState, string>.GetS<StateT<Identity, ShowState>>()
-                 null
+                 IImplementsM<Bind, ShowState, string>.Get<M>(),
+                 IImplementsM<Arith, ShowState, string>.Get<M>(),
+                 IImplementsM<Ref, ShowState, string>.Get<M>()
              );
 
 
@@ -128,6 +125,9 @@ public partial interface CfLang
 
         public TR Val(Value name)
             => Eff.Val(name);
+
+        public TR Ceq(TS a, TS b)
+            => Ari.Ceq(a, b);
     }
 
     public static IMergedSemantic<Fix<CfLang>, Fix<CfLang>> SyntaxFactory { get; }
