@@ -5,6 +5,7 @@ using LambdaLang.Tests.LambdaLang.Language;
 using SemanticAlgebra;
 using Xunit.Abstractions;
 using Xunit;
+using SemanticAlgebra.Free;
 
 namespace LambdaLang.Tests.LambdaLang;
 
@@ -199,11 +200,23 @@ public class LambdaLangTests(ITestOutputHelper Output)
         var expr = BuildLambdaExpression();
 
         var v = expr.Fold(EvalAlgebraK<Sig>.GetFree());
-        throw new NotImplementedException();
-        //var r = v.Run(ImmutableDictionary<Identifier, ISigValue>.Empty);
+        var r = v.Interp(new EvalFToStateTNaturalTransform());
+        var (rv, _) = r.Run(ImmutableDictionary<Identifier, ISigValue>.Empty);
+        Assert.Equal(new SigInt(44), rv);
+    }    [Fact]
+    public void LambdaExpressionEvalIdUsingFree()
+    {
+        var S = Fix<Sig>.SyntaxFactory.Prj();
+        var x = new Identifier("x");
+        var id = S.Lambda(x, S.Var(x));
+        var e = S.Apply(id, S.LitI(42));
 
-        //Assert.Equal(new SigInt(44), r.Value);
+        var v = e.Fold(EvalAlgebraK<Sig>.GetFree());
+        var r = v.Interp(new EvalFToStateTNaturalTransform());
+        var (rv, _) = r.Run(ImmutableDictionary<Identifier, ISigValue>.Empty);
+        Assert.Equal(new SigInt(42), rv);
     }
+
 
     private Fix<Sig> BuildLambdaExpression()
     {
