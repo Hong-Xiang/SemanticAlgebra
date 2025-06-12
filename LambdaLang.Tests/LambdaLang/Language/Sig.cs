@@ -3,6 +3,7 @@ using SemanticAlgebra;
 using SemanticAlgebra.Control;
 using SemanticAlgebra.Data;
 using SemanticAlgebra.Fix;
+using SemanticAlgebra.Free;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
 
@@ -31,6 +32,8 @@ public interface Sig
         ISemantic1<Cond, TS, TR> Cond
     )
         => new SigSemantic<TS, TR>(Lit.Prj(), Arith.Prj(), Lam.Prj(), App.Prj(), Bind.Prj(), Cond.Prj());
+
+  
 
 
     public interface IMergedSemantic<in TI, out TO>

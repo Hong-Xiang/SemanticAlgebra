@@ -58,12 +58,8 @@ public partial interface Ref : IFunctor<Ref>
         }
 
         public IS<M, string> StArg(Value name, IS<M, string> value)
-            => from s in M.Get()
-               let s_ = s.ValueId(name, out var id)
-               from _i in M.Modify(x => x.Indent())
-               from n in value
-               from _o in M.Modify(x => x.Unindent())
-               select s.Line()
+            => throw new NotImplementedException();
+
 
 
         public IS<M, string> StLoc(Value name, IS<M, string> value)

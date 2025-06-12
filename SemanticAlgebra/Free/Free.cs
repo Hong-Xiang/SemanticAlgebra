@@ -43,6 +43,20 @@ public abstract partial class Free<F> : IMonad<Free<F>>
             => B.Roll(v.Select(vi => vi.Evaluate(this)));
     }
 
+    internal sealed class InterpSemantic<M, T>(INaturalTransform<F, M> S)
+            : ISemantic<T, IS<M, T>>
+            where M : IMonad<M>
+    {
+        public IS<M, T> Pure(T v)
+            => M.Pure(v);
+
+        public IS<M, T> Roll(IS<F, IS<Free<F>, T>> v)
+        {
+            var x = v.Select(e => e.Interp(S));
+            var fx = S.Invoke(x);
+            return fx.Join();
+        }
+    }
 }
 
 public static class FreeMonadExtension
@@ -50,4 +64,10 @@ public static class FreeMonadExtension
     public static IS<Free<F>, T> LiftF<F, T>(this IS<F, T> e)
         where F : IFunctor<F>
         => Free<F>.B.Roll(e.Select(Free<F>.B.Pure));
+
+
+    public static IS<M, T> Interp<F, M, T>(this IS<Free<F>, T> e, INaturalTransform<F, M> semantic)
+        where F : IFunctor<F>
+        where M : IMonad<M>
+        => e.Evaluate(new Free<F>.InterpSemantic<M, T>(semantic));
 }

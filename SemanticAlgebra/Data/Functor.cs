@@ -32,3 +32,10 @@ public static class FunctorExtension
     //    where TF : IFunctor<TF>
     //    => TF.CoSemantic<TS, TR>(s => c.CoEvaluate(f(s), TF.Semantic<TO, IS<TF, TR>>(fs => fs.Select(g))));
 }
+
+public interface INaturalTransform<F, G>
+    where F : IFunctor<F>
+    where G : IFunctor<G>
+{
+    IS<G, T> Invoke<T>(IS<F, T> e);
+}

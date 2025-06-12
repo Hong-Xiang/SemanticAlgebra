@@ -1,6 +1,7 @@
 ﻿using SemanticAlgebra;
 using SemanticAlgebra.Data;
 using SemanticAlgebra.Fix;
+using SemanticAlgebra.Free;
 using System.Collections.Immutable;
 
 namespace LambdaLang.Tests.LambdaLang.Language;
@@ -26,6 +27,15 @@ public interface IEvalAlgebra<F> : IFunctor<F>
 {
     static abstract ISemantic1<F, IS<M, ISigValue>, IS<M, ISigValue>> Get<M>()
         where M : IMonadState<M, ImmutableDictionary<Identifier, ISigValue>>;
+
+    static abstract ISemantic1<F, IS<Free<EvalF>, ISigValue>, IS<Free<EvalF>, ISigValue>> GetFree();
+}
+
+static class EvalAlgebraK<F>
+    where F : IEvalAlgebra<F>
+{
+    public static ISemantic1<F, IS<Free<EvalF>, ISigValue>, IS<Free<EvalF>, ISigValue>> GetFree()
+            => F.GetFree();
 }
 
 public interface IMergedSemantic1EvalAlgebra<
@@ -84,4 +94,15 @@ public interface IMergedSemantic1EvalAlgebra<
             TS5.Get<M>(),
             TS6.Get<M>()
         );
+
+    static ISemantic1<TMS, IS<Free<EvalF>, ISigValue>, IS<Free<EvalF>, ISigValue>> IEvalAlgebra<TMS>.GetFree()
+           => TMS.MergeSemantic(
+               TS1.GetFree(),
+               TS2.GetFree(),
+               TS3.GetFree(),
+               TS4.GetFree(),
+               TS5.GetFree(),
+               TS6.GetFree()
+               );
+
 }

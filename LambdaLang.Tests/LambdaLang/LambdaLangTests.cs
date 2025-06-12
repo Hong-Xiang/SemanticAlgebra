@@ -193,6 +193,18 @@ public class LambdaLangTests(ITestOutputHelper Output)
         Assert.Equal(new SigInt(44), r.Value);
     }
 
+    [Fact]
+    public void LambdaExpressionFreeFolderShouldWork()
+    {
+        var expr = BuildLambdaExpression();
+
+        var v = expr.Fold(EvalAlgebraK<Sig>.GetFree());
+        throw new NotImplementedException();
+        //var r = v.Run(ImmutableDictionary<Identifier, ISigValue>.Empty);
+
+        //Assert.Equal(new SigInt(44), r.Value);
+    }
+
     private Fix<Sig> BuildLambdaExpression()
     {
         var S =

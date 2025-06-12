@@ -23,6 +23,9 @@ public partial interface App
 
     static ISemantic1<App, IS<M, ISigValue>, IS<M, ISigValue>> IEvalAlgebra<App>.Get<M>()
         => new AppEvalFolder<M>();
+
+    static ISemantic1<App, IS<Free<EvalF>, ISigValue>, IS<Free<EvalF>, ISigValue>> IEvalAlgebra<App>.GetFree()
+        => new AppFreeFolder();
 }
 
 public sealed class AppShowFolder : App.ISemantic<string, string>
@@ -58,7 +61,7 @@ public sealed class AppFreeFolder
            from r in f switch
            {
                SigClosureF<EvalF, ISigValue> c =>
-                   M.Local(s => c.Env.Add(c.Name, x_), c.Body),
+                   EvalF.Local(s => c.Env.Add(c.Name, x_), c.Body),
                _ => throw new EvalRuntimeException(
                    $"Function application requires a function and an value argument, got {f_} {x_}")
            }
