@@ -61,12 +61,12 @@ public abstract partial class ShowF : IFunctor<ShowF>
     public interface ISemantic<in TS, out TR>
         : ISemantic1<ShowF, TS, TR>
     {
-        TR GetValueId(Value value, Func<int, TS> lookup);
-        TR GetLabelId(Label value, Func<int, TS> lookup);
-        TR Indent(TS a);
-        TR Unindent(TS a);
-        TR Write(string text, TS a);
-        TR WriteLine(string text, TS a);
+        TR GetValueId(Value value, Func<int, TS> next);
+        TR GetLabelId(Label value, Func<int, TS> next);
+        TR Indent(TS next);
+        TR Unindent(TS next);
+        TR Write(string text, TS next);
+        TR WriteLine(string text, TS next);
     }
 
 
