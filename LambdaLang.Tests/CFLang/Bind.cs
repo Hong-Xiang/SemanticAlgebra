@@ -46,9 +46,9 @@ public partial interface Bind
         }
 
         public IS<M, string> SeqV(IS<M, string> step, IS<M, string> next)
-        {
-            throw new NotImplementedException();
-        }
+            => from s in step
+               from n in next
+               select $"{s};{Environment.NewLine}{n}";
 
         public IS<M, string> Val(Value name)
         {

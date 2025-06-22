@@ -15,7 +15,6 @@ public abstract partial class Free<F> : IMonad<Free<F>>
         TR Roll(IS<F, IS<Free<F>, TS>> v);
     }
 
-
     public static ISemantic1<Free<F>, IS<Free<F>, T>, IS<Free<F>, T>> JoinS<T>()
         => new JoinSemantic<T>();
 
@@ -70,4 +69,43 @@ public static class FreeMonadExtension
         where F : IFunctor<F>
         where M : IMonad<M>
         => e.Evaluate(new Free<F>.InterpSemantic<M, T>(semantic));
+}
+
+public sealed partial class FreeF<F, A>
+    : IFunctor<FreeF<F, A>>
+    where F : IFunctor<F>
+{
+    [Semantic1]
+    public interface ISemantic<TS, out TR>
+        : ISemantic1<FreeF<F, A>, TS, TR>
+    {
+        TR Pure(A value);
+        TR Nest(IS<F, TS> nest);
+    }
+
+    public static ISemantic1<FreeF<F, A>, TS, IS<FreeF<F, A>, TR>> MapS<TS, TR>(Func<TS, TR> f)
+        => new MapSemantic<TS, TR>(f);
+
+    public sealed class MapSemantic<TS, TR>(
+        Func<TS, TR> Func
+    ) : ISemantic<TS, IS<FreeF<F, A>, TR>>
+    {
+        public IS<FreeF<F, A>, TR> Nest(IS<F, TS> nest)
+            => B.Nest(nest.Select(Func));
+
+        public IS<FreeF<F, A>, TR> Pure(A value)
+            => B.Pure<TR>(value);
+    }
+
+    public sealed class SemanticF<T>(
+        ISemantic1<F, T, T> semantic,
+        Func<A, T> pure
+    ) : ISemantic<T, T>
+    {
+        public T Nest(IS<F, T> nest)
+            => nest.Evaluate(semantic);
+
+        public T Pure(A value)
+            => pure(value);
+    }
 }

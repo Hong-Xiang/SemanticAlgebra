@@ -178,6 +178,11 @@ public class Tests(ITestOutputHelper Output)
           blk00
         );
 
+        var s = IImplementsM<CfLang, ShowState, string>.Get<StateT<Identity, ShowState>>();
+        var (r, _) = e.Fold(s).Run(ShowState.Empty);
+        Output.WriteLine(r);
+
+
         // let @x = arg i32 in
         // let @i = loc i32 in
         // let @c = loc i32 in

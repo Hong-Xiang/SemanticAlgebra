@@ -69,7 +69,8 @@ public sealed class EvalFToStateTNaturalTransform : INaturalTransform<EvalF, Sta
 
         public IS<M, TS> Lookup(Identifier name, Func<ISigValue, TS> value)
             => from s in M.Get()
-               select value(s[name]);        public IS<M, TS> Put(ImmutableDictionary<Identifier, ISigValue> env, TS next)
+               select value(s[name]); 
+        public IS<M, TS> Put(ImmutableDictionary<Identifier, ISigValue> env, TS next)
             => from _ in M.Put(env)
                select next;
     }

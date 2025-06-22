@@ -18,36 +18,36 @@ public sealed record class ShowState(
         0, ImmutableDictionary<Label, int>.Empty,
         0);
 
-    public ShowState ValueId(Value v, out int id)
+    public (ShowState State, int Index) ValueId(Value v)
     {
-        if (ValueIds.TryGetValue(v, out id))
+        if (ValueIds.TryGetValue(v, out var id))
         {
-            return this;
+            return (this, id);
         }
         else
         {
             id = ValueIndex;
-            return this with
+            return (this with
             {
                 ValueIndex = ValueIndex + 1,
                 ValueIds = ValueIds.Add(v, id)
-            };
+            }, id);
         }
     }
-    public ShowState LableId(Label v, out int id)
+    public (ShowState State, int Index) LableId(Label v)
     {
-        if (LabelIds.TryGetValue(v, out id))
+        if (LabelIds.TryGetValue(v, out var id))
         {
-            return this;
+            return (this, id);
         }
         else
         {
             id = LabelIndex;
-            return this with
+            return (this with
             {
                 LabelIndex = LabelIndex + 1,
                 LabelIds = LabelIds.Add(v, id)
-            };
+            }, id);
         }
     }
     public ShowState Indent() => this with { Indentation = Indentation + 1 };
@@ -95,5 +95,4 @@ public abstract partial class ShowF : IFunctor<ShowF>
         public IS<ShowF, TR> WriteLine(string text, TS a)
             => B.WriteLine(text, func(a));
     }
-
 }

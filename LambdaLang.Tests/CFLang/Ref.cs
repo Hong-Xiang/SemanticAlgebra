@@ -48,14 +48,16 @@ public partial interface Ref : IFunctor<Ref>
         }
 
         public IS<M, string> LdArg(Value name)
-        {
-            throw new NotImplementedException();
-        }
+            => from s in M.Get()
+               let vid = s.ValueId(name)
+               from _ in M.Put(vid.State)
+               select $"ld @{vid.Index}";
 
         public IS<M, string> LdLoc(Value name)
-        {
-            throw new NotImplementedException();
-        }
+            => from s in M.Get()
+               let vid = s.ValueId(name)
+               from _ in M.Put(vid.State)
+               select $"ld @{vid.Index}";
 
         public IS<M, string> StArg(Value name, IS<M, string> value)
             => throw new NotImplementedException();
