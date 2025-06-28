@@ -50,24 +50,22 @@ public partial interface Arith
 
 public sealed class ArithShowF
     : Arith.ISemantic<
-        IS<Free<ShowF>, Unit>,
-        IS<Free<ShowF>, Unit>
+        IS<Free<ShowF>, string>,
+        IS<Free<ShowF>, string>
         >
 {
-    public IS<Free<ShowF>, Unit> Add(IS<Free<ShowF>, Unit> a, IS<Free<ShowF>, Unit> b)
+    public IS<Free<ShowF>, string> Add(IS<Free<ShowF>, string> a, IS<Free<ShowF>, string> b)
         => from sa in a
-           from _ in ShowF.B.Write($" + ", Unit.Default).LiftF()
            from sb in b
-           select Unit.Default;
+           select $"({sa}) + ({sb})";
 
 
-    public IS<Free<ShowF>, Unit> Ceq(IS<Free<ShowF>, Unit> a, IS<Free<ShowF>, Unit> b)
-    {
-        throw new NotImplementedException();
-    }
-
-    public IS<Free<ShowF>, Unit> Clt(IS<Free<ShowF>, Unit> a, IS<Free<ShowF>, Unit> b)
-    {
-        throw new NotImplementedException();
-    }
+    public IS<Free<ShowF>, string> Ceq(IS<Free<ShowF>, string> a, IS<Free<ShowF>, string> b)
+        => from sa in a
+           from sb in b
+           select $"({sa}) == ({sb})";
+    public IS<Free<ShowF>, string> Clt(IS<Free<ShowF>, string> a, IS<Free<ShowF>, string> b)
+        => from sa in a
+           from sb in b
+           select $"({sa}) < ({sb})";
 }

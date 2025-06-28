@@ -1,6 +1,7 @@
 ﻿using SemanticAlgebra;
 using SemanticAlgebra.Data;
 using SemanticAlgebra.Fix;
+using SemanticAlgebra.Free;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -168,8 +169,7 @@ public class Tests(ITestOutputHelper Output)
           S.LetV(v20t1, S.LdLoc(locR),
           S.ReturnValue(S.Val(v20t1))));
 
-        var e =
-        S.LetL(lbl10,
+        var e = S.LetL(lbl10,
           S.LetL(lbl05, blk05,
             S.LetL(lbl1c,
               S.LetL(lbl20, blk20,
@@ -178,9 +178,17 @@ public class Tests(ITestOutputHelper Output)
           blk00
         );
 
-        var s = IImplementsM<CfLang, ShowState, string>.Get<StateT<Identity, ShowState>>();
-        var (r, _) = e.Fold(s).Run(ShowState.Empty);
-        Output.WriteLine(r);
+        var showS = CfLang.CreateMergeSemantic<IS<Free<ShowF>, string>, IS<Free<ShowF>, string>>(
+            null,
+            null,
+            null,
+            null,
+            new ArithShowF(),
+            null
+        );
+
+        //var s = IImplementsM<CfLang, ShowState, string>.Get<StateT<Identity, ShowState>>();
+        var r = e.Fold(showS);
 
 
         // let @x = arg i32 in

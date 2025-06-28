@@ -56,6 +56,7 @@ public abstract partial class Free<F> : IMonad<Free<F>>
             return fx.Join();
         }
     }
+
 }
 
 public static class FreeMonadExtension
@@ -64,11 +65,26 @@ public static class FreeMonadExtension
         where F : IFunctor<F>
         => Free<F>.B.Roll(e.Select(Free<F>.B.Pure));
 
+    sealed class FreeLiftSemantic<F, T>(
+          ISemantic1<F, T, T> nest
+      ) : Free<F>.ISemantic<T, T>
+        where F : IFunctor<F>
+    {
+        public T Pure(T v) => v;
+
+        public T Roll(IS<F, IS<Free<F>, T>> v)
+            => v.Select(e => e.Evaluate(this)).Evaluate(nest);
+    }
+
+    public static Free<F>.ISemantic<T, T> LiftF<F, T>(this ISemantic1<F, T, T> s)
+        where F : IFunctor<F>
+        => new FreeLiftSemantic<F, T>(s);
 
     public static IS<M, T> Interp<F, M, T>(this IS<Free<F>, T> e, INaturalTransform<F, M> semantic)
         where F : IFunctor<F>
         where M : IMonad<M>
         => e.Evaluate(new Free<F>.InterpSemantic<M, T>(semantic));
+
 }
 
 public sealed partial class FreeF<F, A>
@@ -80,7 +96,7 @@ public sealed partial class FreeF<F, A>
         : ISemantic1<FreeF<F, A>, TS, TR>
     {
         TR Pure(A value);
-        TR Nest(IS<F, TS> nest);
+        TR Roll(IS<F, TS> nest);
     }
 
     public static ISemantic1<FreeF<F, A>, TS, IS<FreeF<F, A>, TR>> MapS<TS, TR>(Func<TS, TR> f)
@@ -90,8 +106,8 @@ public sealed partial class FreeF<F, A>
         Func<TS, TR> Func
     ) : ISemantic<TS, IS<FreeF<F, A>, TR>>
     {
-        public IS<FreeF<F, A>, TR> Nest(IS<F, TS> nest)
-            => B.Nest(nest.Select(Func));
+        public IS<FreeF<F, A>, TR> Roll(IS<F, TS> nest)
+            => B.Roll(nest.Select(Func));
 
         public IS<FreeF<F, A>, TR> Pure(A value)
             => B.Pure<TR>(value);
@@ -102,7 +118,7 @@ public sealed partial class FreeF<F, A>
         Func<A, T> pure
     ) : ISemantic<T, T>
     {
-        public T Nest(IS<F, T> nest)
+        public T Roll(IS<F, T> nest)
             => nest.Evaluate(semantic);
 
         public T Pure(A value)

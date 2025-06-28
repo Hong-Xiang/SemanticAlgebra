@@ -60,10 +60,6 @@ public static class Prelude
         where TF : IExtend<TF>
         => fs.Extend(Id);
 
-    public static T Extract<F, T>(this IS<F, T> ft)
-        where F : IExtract<F>
-        => ft.Evaluate(F.ExtractS<T>());
-
     public static T Fix<T>(Func<Lazy<T>, T> f)
     {
         Lazy<T>? r = null;

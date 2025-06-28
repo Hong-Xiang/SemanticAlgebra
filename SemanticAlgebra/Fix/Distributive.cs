@@ -11,13 +11,6 @@ public interface IDistributive<F, G>
     where F : IFunctor<F>
     where G : IFunctor<G>
 {
-    ISemantic1<F, IS<G, T>, IS<G, IS<F, T>>> Distribute<T>();
+    IS<G, IS<F, T>> Distribute<T>(IS<F, IS<G, T>> fg);
 }
 
-public sealed class DistributeFunctorIdentity<G> : IDistributive<G, Identity>
-    where G : IFunctor<G>
-{
-    public ISemantic1<G, IS<Identity, T>, IS<Identity, IS<G, T>>> Distribute<T>()
-        => G.Semantic<IS<Identity, T>, IS<Identity, IS<G, T>>>(fit =>
-            Identity.Pure(fit.Select(static e => e.Extract())));
-}

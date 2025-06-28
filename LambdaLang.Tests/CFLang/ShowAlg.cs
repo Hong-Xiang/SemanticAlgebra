@@ -1,5 +1,6 @@
 ﻿using SemanticAlgebra;
 using SemanticAlgebra.Data;
+using SemanticAlgebra.Free;
 using SemanticAlgebra.Syntax;
 using System.Collections.Immutable;
 
@@ -65,8 +66,7 @@ public abstract partial class ShowF : IFunctor<ShowF>
         TR GetLabelId(Label value, Func<int, TS> next);
         TR Indent(TS next);
         TR Unindent(TS next);
-        TR Write(string text, TS next);
-        TR WriteLine(string text, TS next);
+        TR GetIndentation(Func<int, TS> next);
     }
 
 
@@ -76,6 +76,9 @@ public abstract partial class ShowF : IFunctor<ShowF>
     sealed class MapSemantic<TS, TR>(Func<TS, TR> func)
         : ISemantic<TS, IS<ShowF, TR>>
     {
+        public IS<ShowF, TR> GetIndentation(Func<int, TS> next)
+            => B.GetIndentation(level => func(next(level)));
+
         public IS<ShowF, TR> GetLabelId(Label value, Func<int, TS> lookup)
             => B.GetLabelId(value, id => func(lookup(id)));
 
@@ -88,11 +91,56 @@ public abstract partial class ShowF : IFunctor<ShowF>
 
         public IS<ShowF, TR> Unindent(TS a)
             => B.Unindent(func(a));
-
-        public IS<ShowF, TR> Write(string text, TS a)
-            => B.Write(text, func(a));
-
-        public IS<ShowF, TR> WriteLine(string text, TS a)
-            => B.WriteLine(text, func(a));
     }
+}
+
+public static partial class ShowFExtension
+{
+    sealed class ShowFPrintFreeSemantic
+        : ShowF.ISemantic<Func<int, string>, Func<int, string>>
+    {
+        private Dictionary<Label, int> Labels = [];
+        private Dictionary<Value, int> Values = [];
+
+        public Func<int, string> GetIndentation(Func<int, Func<int, string>> next)
+            => l => next(l)(l);
+
+        public Func<int, string> GetLabelId(Label value, Func<int, Func<int, string>> next)
+        {
+            if (Labels.TryGetValue(value, out var result))
+            {
+                return next(result);
+            }
+            else
+            {
+                var id = Labels.Count;
+                Labels.Add(value, id);
+                return next(id);
+            }
+        }
+
+        public Func<int, string> GetValueId(Value value, Func<int, Func<int, string>> next)
+        {
+            if (Values.TryGetValue(value, out var result))
+            {
+                return next(result);
+            }
+            else
+            {
+                var id = Labels.Count;
+                Values.Add(value, id);
+                return next(id);
+            }
+        }
+
+        public Func<int, string> Indent(Func<int, string> next)
+            => l => next(l + 1);
+
+        public Func<int, string> Unindent(Func<int, string> next)
+            => l => next(l - 1);
+
+    }
+
+    public static string Print(this IS<Free<ShowF>, string> e)
+        => e.Select<Free<ShowF>, string, Func<int, string>>(x => l => x).Evaluate(new ShowFPrintFreeSemantic().LiftF())(0);
 }

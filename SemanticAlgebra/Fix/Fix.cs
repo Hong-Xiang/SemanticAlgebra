@@ -1,6 +1,5 @@
 ﻿using SemanticAlgebra.Control;
 using SemanticAlgebra.Data;
-using SemanticAlgebra.Free;
 
 namespace SemanticAlgebra.Fix;
 
@@ -19,7 +18,7 @@ public sealed record class Fix<F>(IS<F, Fix<F>> Unfix)
         ));
 
     public static ISemantic1<F, Fix<F>, Fix<F>> SyntaxFactory =>
-        F.Id<Fix<F>>().Compose(e => e.Fix());
+        F.Id<Fix<F>>().Compose(static e => e.Fix());
 
     public static Fix<F> Unfold<T>(Func<T, IS<F, T>> f, T value)
         => f(value).Select(t => Unfold(f, t)).Fix();
@@ -72,43 +71,233 @@ public static class FixExtension
         => Either<Fix<F>>.B.Left<Fix<F>>(e);
 }
 
-// given forall a. f w a -> w f a
-//   and f w t -> t
-// fold :: fix f -> t
-public sealed record class Folder<F, W, T>(
-    IDistributive<F, W> Distribute,
-    ISemantic1<F, IS<W, T>, T> Semantic
+// unfold : a -> f ( fix f | a )
+
+// free f a = pure a | nest f (free f a)
+
+// either l r = l | r
+
+// free (const l) r = pure r | nest (const l) * ~ l | r
+
+// f (free f a)
+
+// distributive m f a = free (const (fix f)) (f a) - f (free (const (fix f)) a)
+
+// pure (f a) -> (f a).Select(Pure)
+// roll e:(fix f) ->  (e.unfix : f (fix f)).Select(n -> (const n).LiftF())
+
+
+// == gcata ==
+// dist :: forall x. f (w x) -> w (f x)
+// alg  :: f (w t) -> t
+// fold :: fix f   -> t
+public sealed class Folder<F, W, T>(
+    IDistributive<F, W> Dist,
+    ISemantic1<F, IS<W, T>, T> Alg
 )
     where F : IFunctor<F>
     where W : IComonad<W>
 {
-    public T Fold(Fix<F> e) => Step(e).Evaluate(W.ExtractS<T>());
+    Recurse<F, Identity, W, Fix<F>, T> Recurse = new(
+        new DistributeIdentityFunctor<F>(),
+        e => e.Unfix.Select(Identity.B.From),
+        Dist,
+        Alg);
 
-    private IS<W, T> Step(Fix<F> value)
+    public T Fold(Fix<F> e) => Recurse.Run(e);
+
+    //public T Fold(Fix<F> e) => Step(e).Extract();
+
+    //private IS<W, T> Step(Fix<F> value)
+    //{
+    //    var fwwt = value.Unfix.Select(fx => Step(fx).Duplicate());
+    //    var wfwt = Dist.Distribute(fwwt);
+    //    return wfwt.Select(fwt => fwt.Evaluate(Alg));
+    //}
+}
+
+// == gana ==
+// dist   :: forall x. m (f x) -> f (m x)
+// co_alg :: t -> f (m t)
+// unfold :: t -> fix f
+public sealed class UnFolder<F, M, T>(
+    IDistributive<M, F> Dist,
+    Func<T, IS<F, IS<M, T>>> CoAlg
+)
+    where F : IFunctor<F>
+    where M : IMonad<M>
+{
+    public Fix<F> Unfold(T v) => Step(M.Pure(v));
+    private Fix<F> Step(IS<M, T> e)
     {
-        var nested = value.Unfix.Select(fx => Step(fx).Duplicate());
-        var swap = nested.Evaluate(Distribute.Distribute<IS<W, T>>());
-        return swap.Select(fwt => fwt.Evaluate(Semantic));
+        var mfmt = e.Select(CoAlg);
+        var fmmt = Dist.Distribute(mfmt);
+        var fft = fmmt.Select(x => x.Join());
+        return fft.Select(Step).Fix();
     }
 }
 
-// forall a. f (w a) -> w (f a)
-// forall b. m (f b) -> f (m b)
-// f (w t) -> m t
-// Fix f
-// m t
+// ghylo
+// dmf   :: forall x. m (f x) -> f (m x)
+// dfw   :: forall x. f (w x) -> w (f x)
+// alg   :: f (w r) -> r
+// coalg :: s -> f (m s)
+// s -> r
 
-// gcata ::
-// forall a. f (w a) -> w (f a)
-// f (w a) -> a
-// Fix f
+
+// gcata is ghylo with s = Fix f,
+// m = Identity,
+// coalg is Fix f -> f (Fix f), thus unfix
+// dmf is Identity (f x) -> f (Identity x), thus (map from) . unwrap
+
+// gana is ghylo with r = Fix f,
+// w = Identity,
+// alg is f (Fix f) -> Fix f, thus fix
+// dfw is f (Identity x) -> Identity (f x), thus from . (map unwarp) 
+
+// TODO : further efficiency on https://blog.sumtypeofway.com/posts/recursion-schemes-part-5.html
+public sealed class RecurseFix<F, M, W, TS, TR>(
+    IDistributive<M, F> DistMF,
+    Func<TS, IS<F, IS<M, TS>>> CoAlg,
+    IDistributive<F, W> DistFW,
+    ISemantic1<F, IS<W, TR>, TR> Alg)
+    where F : IFunctor<F>
+    where M : IMonad<M>
+    where W : IComonad<W>
+{
+    private TR Fold(Fix<F> e) => StepR(e).Extract();
+
+    private IS<W, TR> StepR(Fix<F> value)
+    {
+        var fwwr = value.Unfix.Select(fx => StepR(fx).Duplicate());
+        var wfwr = DistFW.Distribute(fwwr);
+        return wfwr.Select(fwr => fwr.Evaluate(Alg));
+    }
+    private Fix<F> Unfold(TS v) => StepS(M.Pure(v));
+    private Fix<F> StepS(IS<M, TS> e)
+    {
+        var mfms = e.Select(CoAlg);
+        var fmms = DistMF.Distribute(mfms);
+        var ffs = fmms.Select(x => x.Join());
+        return ffs.Select(StepS).Fix();
+    }
+    public TR Run(TS a) => Fold(Unfold(a));
+}
+
+public sealed class Recurse<F, M, W, TS, TR>(
+    IDistributive<M, F> DistMF,
+    Func<TS, IS<F, IS<M, TS>>> CoAlg,
+    IDistributive<F, W> DistFW,
+    ISemantic1<F, IS<W, TR>, TR> Alg)
+    where F : IFunctor<F>
+    where M : IMonad<M>
+    where W : IComonad<W>
+{
+    private IS<F, IS<M, TS>> StepM(IS<M, TS> ms)
+    {
+        var mfms = ms.Select(CoAlg);
+        var fmms = DistMF.Distribute(mfms);
+        var fms = fmms.Select(x => x.Join());
+        return fms;
+    }
+    private IS<W, TR> StepW(IS<F, IS<W, TR>> fwr)
+    {
+        var fwwr = fwr.Select(wr => wr.Duplicate());
+        var wfwr = DistFW.Distribute(fwwr);
+        var wr = wfwr.Select(fwr => fwr.Evaluate(Alg));
+        return wr;
+    }
+
+    private IS<W, TR> Step(IS<M, TS> ms)
+    {
+        var fms = StepM(ms);
+        var fwr = fms.Select(Step);
+        var wr = StepW(fwr);
+        return wr;
+    }
+
+    public TR Run(TS a) => Step(M.Pure(a)).Extract();
+}
+
+
+sealed class Hylo<F, TS, TR>(
+    Func<TS, IS<F, TS>> coalg,
+    ISemantic1<F, TR, TR> alg
+) where F : IFunctor<F>
+{
+    public TR Run(TS value)
+    {
+        return coalg(value).Select(Run).Evaluate(alg);
+    }
+}
+
+//gunfold, gana
+//  :: (Corecursive t, Monad m)
+//  => k : (forall b. m(Base t b) -> Base t(m b)) -- ^ a distributive law
+//  -> f : (a -> Base t(m a))                      -- ^ a(Base t)-m-coalgebra
+//  -> a                                        -- ^ seed
+//  -> Fix f
+//gana k f = g . return . f where
+//  g = embed . fmap(g . liftM f . join) . k
+
+// basically 
+// fu b : f (m b)
+// | pure : m (f (m b))
+// | 
+
+// g : m (f (m b)) -> Fix f
+// | fd : f (m (m b))
+// let h :  m (m b) -> Fix f
+// | map h : f (Fix f)
+// | fix
+
+
+// fd : forall x. m (f x) -> f (m x)
+// fu : t -> f (m t)
+// t -> fix f
+
+
+// fu t : f (m t)
+// pure : m (f (m t))
+// fd : f (m (m t))
+// -- step
+// map join : f (m t)
+// map (map fu) : f (m (f (m t)))
+// map fd : f (f (m (m t)))
+// map (map join) : f (f (m t)) 
+
+
+// t
+// | fu : f (m t)
+// | map map fu : f (m (f (m t))
+// | map map .... : f m f m f m .... f m t
+// dist             f (m f m) f m .....
+//                  f (f m m) f m .....
+//                  f (f m f m ..... )
+
+
+
+//public T Fold(Fix<F> e) => Step(e).Extract();
+
+//private IS<W, T> Step(Fix<F> value)
+//{
+//    var nested = value.Unfix.Select(fx => Step(fx).Duplicate());
+//    var swap = Distribute.Distribute(nested);
+//    return swap.Select(fwt => fwt.Evaluate(Semantic));
+//}
+
+
+
+// dm :: m f x -> f m x
+// dw :: f w x -> w f x
+// u : a -> f m a
+// f : f w b -> b
+// a -> b
+
+
 // a
-
-// gana ::
-// forall b. m (f b) -> f (m b)
-// b -> f (m b)
-// b
-// Fix f
+// f m a
+// 
 
 
 // hylo
@@ -139,6 +328,19 @@ public sealed record class Folder<F, W, T>(
 
 // Free f a = Fix g where g x = a | f x
 // Cofree f a = Fix h where h x = (a, f x)
+
+
+// Recurse
+// Functor f, Monad m, Comonad w
+// => forall a. m (f a) -> f (m a)
+// -> forall b. f (w b) -> w (f b)
+// -> a -> f (m a)
+// -> f (w b) -> b
+// -> a -> b
+
+// implementation 
+
+
 
 // then gholyf becomes
 // ghyloFreeCoFree

@@ -47,9 +47,9 @@ public class OptionTests
     }
 
     sealed class FreeConstantToOption
-        : INaturalTransform<Constant<Unit>, Option>
+        : INaturalTransform<SemanticAlgebra.Data.Constant<Unit>, Option>
     {
-        public IS<Option, T> Invoke<T>(IS<Constant<Unit>, T> e)
+        public IS<Option, T> Invoke<T>(IS<SemanticAlgebra.Data.Constant<Unit>, T> e)
             => Option.B.None<T>();
     }
 
@@ -57,9 +57,9 @@ public class OptionTests
     public void FromConstShouldWorkForAllSome()
     {
         // Arrange & Act
-        var x = from a in Free<Constant<Unit>>.B.Pure(40)
-                from b in Free<Constant<Unit>>.B.Pure(2)
-                from c in Free<Constant<Unit>>.B.Pure(3)
+        var x = from a in Free<SemanticAlgebra.Data.Constant<Unit>>.B.Pure(40)
+                from b in Free<SemanticAlgebra.Data.Constant<Unit>>.B.Pure(2)
+                from c in Free<SemanticAlgebra.Data.Constant<Unit>>.B.Pure(3)
                 select a + b + c;
         var v = x.Interp(new FreeConstantToOption());
 

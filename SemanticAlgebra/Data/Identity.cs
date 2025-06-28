@@ -1,4 +1,5 @@
 ﻿using SemanticAlgebra.Control;
+using SemanticAlgebra.Fix;
 
 namespace SemanticAlgebra.Data;
 
@@ -52,4 +53,18 @@ public static class IdentityExtension
 
     public static T Unwrap<T>(this IS<Identity, T> e)
         => Identity.IAlias1<T>.Unwrap(e);
+}
+
+public sealed class DistributeFunctorIdentity<G> : IDistributive<G, Identity>
+    where G : IFunctor<G>
+{
+    public IS<Identity, IS<G, T>> Distribute<T>(IS<G, IS<Identity, T>> fg)
+        => Identity.B.From(fg.Select(static x => x.Unwrap()));
+}
+
+public sealed class DistributeIdentityFunctor<F> : IDistributive<Identity, F>
+    where F : IFunctor<F>
+{
+    public IS<F, IS<Identity, T>> Distribute<T>(IS<Identity, IS<F, T>> fg)
+        => fg.Unwrap().Select(Identity.B.From);
 }
