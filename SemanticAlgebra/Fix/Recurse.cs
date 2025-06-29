@@ -98,10 +98,9 @@ public static class Recursive
 
 // lets start with bottom up - using alg
 // ideally our alg would be
-// f (a, (fix f)) -> (a, (fix f))
-// thus (w (cofree f a)) = (a, fix f)
-// thus (w (a, f (cofree f a))) = (a, fix f)
-
+// f a -> a
+// however if we direct substitue our result into recurse we would get
+// 
 
 // interprete : free f a -> m a
 

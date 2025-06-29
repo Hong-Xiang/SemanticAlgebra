@@ -143,8 +143,18 @@ public static partial class FreePreludeExtension
     //    ISemantic1<Free<F>, TS, TR> s)
     //    where F : IFunctor<F>
     //    => (Free<F>.IAlias<TS>.ISemantic<TR>)s;
-
 }
+
+// let freef f a x = pure a | roll f x
+// free f a ~ fix (freef f a)
+// free f a = pure a | roll (f (free f a))
+//       t  ~ a + f t 
+//          = a + f (a + f t)
+//          = a + f (a + f (a + f (a + ...
+// fix (freef f a) = (freef f a) (fix (freef f a))
+//      fix = a + f fix
+//          = a + f ( a + f fix )
+//          = a + f ( a + f ( a + f fix ) )
 
 public sealed partial class FreeF2<F>
     : IFunctor2<FreeF2<F>>
@@ -183,7 +193,7 @@ public sealed partial class FreeF2<F>
 
     public interface ISemantic<TA, TB, TR>
         : ISemantic2<FreeF2<F>, TA, TB, TR>
-        , ISemantic1<K2<FreeF2<F>, TA>, TB, TR>
+        , ISemantic1<K21<FreeF2<F>, TA>, TB, TR>
     {
         TR Pure(TA value);
         TR Roll(IS<F, IS2<FreeF2<F>, TA, TB>> value);

@@ -1,4 +1,7 @@
-﻿namespace SemanticAlgebra;
+﻿using SemanticAlgebra.Control;
+using SemanticAlgebra.Data;
+
+namespace SemanticAlgebra;
 
 // Semantic1 encodes f s -> r
 // TF<TS> is not valid dotnet type due to lack of builtin higher kinded type support

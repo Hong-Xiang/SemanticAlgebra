@@ -23,6 +23,7 @@ public sealed record class Fix<F>(IS<F, Fix<F>> Unfix)
 
     public T Fold<T>(ISemantic1<F, T, T> folder)
         => Recursive.Create<F, Fix<F>, T>(static fx => fx.Unfix, folder.ToFunc()).Run(this);
+
     public static Func<T, Fix<F>> UnFolder<T>(Func<T, IS<F, T>> unfolder)
     {
         var rec = Recursive.Create<F, T, Fix<F>>(
@@ -30,6 +31,23 @@ public sealed record class Fix<F>(IS<F, Fix<F>> Unfix)
             static x => x.Fix()
         );
         return rec.Run;
+    }
+
+    public Fix<K21<CofreeF<F>, TA>> TopDownAnnotate<TA>(
+        Func<(TA Attr, Fix<F> Expr), (TA Attr, IS<F, (TA Attr, Fix<F> Expr)> Expr)> step,
+        TA seed
+    )
+    {
+        var unfolder = Fix<K21<CofreeF<F>, TA>>.UnFolder<(TA Attr, Fix<F> Expr)>(
+            e =>
+            {
+                var r = step(e);
+                var hd = r.Attr;
+                var tl = r.Expr;
+                return CofreeF<F>.B.From(hd, tl);
+            }
+        );
+        return unfolder((seed, this));
     }
 
 
@@ -54,7 +72,21 @@ public sealed record class Fix<F>(IS<F, Fix<F>> Unfix)
         );
         return rec.Run(this);
     }
-
+    public IS<Cofree<F>, T> AddAttributeButtomUp2<T>(
+        IDistributeTransform<F, Cofree<F>> dist,
+        Func<IS<F, T>, T> alg)
+    {
+        var rec = Recursive.Create<F, Fix<F>, IS<Cofree<F>, T>>(
+            fx => fx.Unfix,
+            fCofree =>
+            {
+                var c = dist.Distribute(fCofree);
+                var r = c.Select(alg);
+                return r;
+            }
+        );
+        return rec.Run(this);
+    }
 
 
     public static Fix<F> Unfold<T>(Func<T, IS<F, T>> f, T value)
@@ -90,10 +122,24 @@ public sealed record class Fix<F>(IS<F, Fix<F>> Unfix)
 
     public Fix<F> TopDown(ISemantic1<F, Fix<F>, IS<F, Fix<F>>> s)
         => Unfix.Evaluate(s).Select(e => e.TopDown(s)).Fix();
+
+
 }
 
 public static class FixExtension
 {
+    //public Fix<G> TopDownG<F, G>(this IS<G, Fix<F>> e, ISemantic1<F, IS<G, Fix<F>>, IS<G, Fix<F>>> s)
+    //        where F : IFunctor<F>
+    //        where G : IFunctor<G>
+    //    => e.Select(ff => ff.Unfix )
+    //=> Unfix.Evaluate(s).Select(e => e.TopDownG(s)).Fix();
+    //public Fix<K21<CofreeF<F>, TA>> TopDownG<F, TA>(
+    //    this IS<K21<CofreeF<F>, TA>, Fix<F>> e,
+    //    ISemantic1<K21<CofreeF<F>, TA>, Fix<K21<CofreeF<F>, TA>>, Fix<K21<CofreeF<F>, TA>>> s)
+    //    where F : IFunctor<F>
+    //{
+    //}
+
     public static Fix<F> Fix<F>(this IS<F, Fix<F>> e)
         where F : IFunctor<F>
         => new(e);
