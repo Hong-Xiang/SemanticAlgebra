@@ -144,3 +144,21 @@ public static partial class ShowFExtension
     public static string Print(this IS<Free<ShowF>, string> e)
         => e.Select<Free<ShowF>, string, Func<int, string>>(x => l => x).Evaluate(new ShowFPrintFreeSemantic().LiftF())(0);
 }
+
+// adding indentation - add int attribute to Fix f
+// and working on top-down style
+// thus coalg uses (int, fix f) -> f (int, fix f)
+// and result ast is fix (cofree f int) ? 
+
+// cofree f a = (a, f (cofree f a))
+
+// fix g where g x = (int, f x)
+
+
+// IFixPoint<G, F>
+// means IS<G, Fix<F>> = Fix<F>
+// G = F F F F ...
+
+// 
+
+// from fix f 

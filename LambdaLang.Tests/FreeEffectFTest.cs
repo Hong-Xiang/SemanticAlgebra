@@ -88,7 +88,7 @@ public class FreeEffectFTest(ITestOutputHelper Output)
     public void SimpleCountZeroShouldWorkUsingFreeInterperter()
     {
         var z = EffCountF.B.Get(Prelude.Id).LiftF();
-        var r = z.Interp(new EffCountStateFNaturalTransform()).Run(0);
+        var r = z.Interprete(new EffCountStateFNaturalTransform()).Run(0);
         Assert.Equal(0, r.Value);
     }
 
@@ -99,7 +99,7 @@ public class FreeEffectFTest(ITestOutputHelper Output)
                 from v in EffCountF.B.Get(Prelude.Id).LiftF()
                 select v;
         Output.WriteLine(s.ToString());
-        var r = s.Interp(new EffCountStateFNaturalTransform()).Run(0);
+        var r = s.Interprete(new EffCountStateFNaturalTransform()).Run(0);
         Assert.Equal(1, r.Value);
     }
 

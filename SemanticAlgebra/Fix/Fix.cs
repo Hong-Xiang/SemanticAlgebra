@@ -1,24 +1,61 @@
 ﻿using SemanticAlgebra.Control;
 using SemanticAlgebra.Data;
+using SemanticAlgebra.Free;
 
 namespace SemanticAlgebra.Fix;
 
 public sealed record class Fix<F>(IS<F, Fix<F>> Unfix)
     where F : IFunctor<F>
 {
+    public static ISemantic1<F, Fix<F>, Fix<F>> SyntaxFactory =>
+        F.Id<Fix<F>>().Compose(static e => e.Fix());
+
     public T FoldW<W, T>(Folder<F, W, T> folder)
         where W : IComonad<W>
         => folder.Fold(this);
 
-    public T Fold<T>(ISemantic1<F, T, T> folder)
-        => FoldW(new Folder<F, Identity, T>(
-            new DistributeFunctorIdentity<F>(),
-            // folder.DiMap<F, IS<Identity, T>, T, T, T>(Identity.Unwrap, Prelude.Id)
-            folder.CoMap<F, IS<Identity, T>, T, T>(static e => e.Extract())
-        ));
+    //public T Fold<T>(ISemantic1<F, T, T> folder)
+    //    => FoldW(new Folder<F, Identity, T>(
+    //        Identity.DistributeTransformToIdentity<F>(),
+    //        // folder.DiMap<F, IS<Identity, T>, T, T, T>(Identity.Unwrap, Prelude.Id)
+    //        folder.CoMap<F, IS<Identity, T>, T, T>(static e => e.Extract())
+    //    ));
 
-    public static ISemantic1<F, Fix<F>, Fix<F>> SyntaxFactory =>
-        F.Id<Fix<F>>().Compose(static e => e.Fix());
+    public T Fold<T>(ISemantic1<F, T, T> folder)
+        => Recursive.Create<F, Fix<F>, T>(static fx => fx.Unfix, folder.ToFunc()).Run(this);
+    public static Func<T, Fix<F>> UnFolder<T>(Func<T, IS<F, T>> unfolder)
+    {
+        var rec = Recursive.Create<F, T, Fix<F>>(
+            unfolder,
+            static x => x.Fix()
+        );
+        return rec.Run;
+    }
+
+
+    public IS<Cofree<F>, T> AddAttributeTopDown<T>(T seed,
+        Func<(T Attr, Fix<F> Expr), IS<F, (T Attr, Fix<F> Expr)>> olalg)
+    {
+        (T Attr, Fix<F> Expr) tuple = (seed, this);
+        var res = olalg(tuple);
+        var resCofree = res.Select(t => t.Expr.AddAttributeTopDown(t.Attr, olalg));
+        return Cofree<F>.B.From(seed, resCofree);
+    }
+    public IS<Cofree<F>, T> AddAttributeButtomUp<T>(
+        Func<IS<F, IS<Cofree<F>, T>>, T> alg)
+    {
+        var rec = Recursive.Create<F, Fix<F>, IS<Cofree<F>, T>>(
+            fx => fx.Unfix,
+            fCofree =>
+            {
+                var attr = alg(fCofree);
+                return Cofree<F>.B.From(attr, fCofree);
+            }
+        );
+        return rec.Run(this);
+    }
+
+
 
     public static Fix<F> Unfold<T>(Func<T, IS<F, T>> f, T value)
         => f(value).Select(t => Unfold(f, t)).Fix();
@@ -61,7 +98,6 @@ public static class FixExtension
         where F : IFunctor<F>
         => new(e);
 
-
     public static IS<Either<Fix<F>>, Fix<F>> UnfoldRecursive<F>(this Fix<F> e)
         where F : IFunctor<F>
         => Either<Fix<F>>.B.Right(e);
@@ -92,17 +128,17 @@ public static class FixExtension
 // alg  :: f (w t) -> t
 // fold :: fix f   -> t
 public sealed class Folder<F, W, T>(
-    IDistributive<F, W> Dist,
+    IDistributeTransform<F, W> Dist,
     ISemantic1<F, IS<W, T>, T> Alg
 )
     where F : IFunctor<F>
     where W : IComonad<W>
 {
-    Recurse<F, Identity, W, Fix<F>, T> Recurse = new(
-        new DistributeIdentityFunctor<F>(),
-        e => e.Unfix.Select(Identity.B.From),
-        Dist,
-        Alg);
+    private readonly Recurse<F, Identity, W, Fix<F>, T> Recurse = new(
+            new DistributeIdentityFunctor<F>(),
+            static e => e.Unfix.Select(Identity.B.From),
+            Dist,
+            Alg.ToFunc());
 
     public T Fold(Fix<F> e) => Recurse.Run(e);
 
@@ -121,7 +157,7 @@ public sealed class Folder<F, W, T>(
 // co_alg :: t -> f (m t)
 // unfold :: t -> fix f
 public sealed class UnFolder<F, M, T>(
-    IDistributive<M, F> Dist,
+    IDistributeTransform<M, F> Dist,
     Func<T, IS<F, IS<M, T>>> CoAlg
 )
     where F : IFunctor<F>
@@ -157,9 +193,9 @@ public sealed class UnFolder<F, M, T>(
 
 // TODO : further efficiency on https://blog.sumtypeofway.com/posts/recursion-schemes-part-5.html
 public sealed class RecurseFix<F, M, W, TS, TR>(
-    IDistributive<M, F> DistMF,
+    IDistributeTransform<M, F> DistMF,
     Func<TS, IS<F, IS<M, TS>>> CoAlg,
-    IDistributive<F, W> DistFW,
+    IDistributeTransform<F, W> DistFW,
     ISemantic1<F, IS<W, TR>, TR> Alg)
     where F : IFunctor<F>
     where M : IMonad<M>
@@ -183,42 +219,6 @@ public sealed class RecurseFix<F, M, W, TS, TR>(
     }
     public TR Run(TS a) => Fold(Unfold(a));
 }
-
-public sealed class Recurse<F, M, W, TS, TR>(
-    IDistributive<M, F> DistMF,
-    Func<TS, IS<F, IS<M, TS>>> CoAlg,
-    IDistributive<F, W> DistFW,
-    ISemantic1<F, IS<W, TR>, TR> Alg)
-    where F : IFunctor<F>
-    where M : IMonad<M>
-    where W : IComonad<W>
-{
-    private IS<F, IS<M, TS>> StepM(IS<M, TS> ms)
-    {
-        var mfms = ms.Select(CoAlg);
-        var fmms = DistMF.Distribute(mfms);
-        var fms = fmms.Select(x => x.Join());
-        return fms;
-    }
-    private IS<W, TR> StepW(IS<F, IS<W, TR>> fwr)
-    {
-        var fwwr = fwr.Select(wr => wr.Duplicate());
-        var wfwr = DistFW.Distribute(fwwr);
-        var wr = wfwr.Select(fwr => fwr.Evaluate(Alg));
-        return wr;
-    }
-
-    private IS<W, TR> Step(IS<M, TS> ms)
-    {
-        var fms = StepM(ms);
-        var fwr = fms.Select(Step);
-        var wr = StepW(fwr);
-        return wr;
-    }
-
-    public TR Run(TS a) => Step(M.Pure(a)).Extract();
-}
-
 
 sealed class Hylo<F, TS, TR>(
     Func<TS, IS<F, TS>> coalg,
@@ -288,74 +288,6 @@ sealed class Hylo<F, TS, TR>(
 
 
 
-// dm :: m f x -> f m x
-// dw :: f w x -> w f x
-// u : a -> f m a
-// f : f w b -> b
-// a -> b
-
-
-// a
-// f m a
-// 
-
-
-// hylo
-// Fold
-// Unfold
-// Refold( fold : f b -> b , unfold : a -> f a ) -> (a -> b)
-
-// when a = Fix f, then unfold is just unfix, Refold is f b -> b -> Fix f -> b
-// when b = Fix f, then fold is just fix, Refold is just a -> f a -> a -> Fix b
-
-// if we only consider Free f and CoFree g,
-// then we can get simplified distributive low
-
-// e.g. for CoFree g
-// forall a. f (Cofree g a) -> (Cofree g) (f a)
-// is f (a, g (Cofree g a)) -> (f a, g (Cofree g) (f a))
-// which f a could be easily get by fmap fst
-// and fmap snd on argument would get f (g (Cofree g a))
-// apply distributive, we got g (f (Cofree g a))
-// then we need a function to map f (Cofree g a) to (Cofree g) (f a)
-// which exactly distributive itself, thus we need recusive in this case
-
-// Let Sum a f x = a | f x
-// Free f a = a | f (Free f a) 
-// Fix (Sum a f) = (Sum a f) (Fix (Sum a f))
-//               = a | f (Fix (Sum a f))
-
-
 // Free f a = Fix g where g x = a | f x
 // Cofree f a = Fix h where h x = (a, f x)
 
-
-// Recurse
-// Functor f, Monad m, Comonad w
-// => forall a. m (f a) -> f (m a)
-// -> forall b. f (w b) -> w (f b)
-// -> a -> f (m a)
-// -> f (w b) -> b
-// -> a -> b
-
-// implementation 
-
-
-
-// then gholyf becomes
-// ghyloFreeCoFree
-//  :: (Functor f, Functor g, Functor h)
-//  => (forall x. g(f x) -> f(g x)) -- ^ Distributive law for g over f
-//  -> (forall x. f(h x) -> h(f x)) -- ^ Distributive law for f over h
-//  -> (f (CoFree h b) -> b)          -- ^ The cofree algebra(fold)
-//  -> (a -> f(Free g a))            -- ^ The free coalgebra(unfold)
-//  -> a                              -- ^ The initial seed
-//  -> b                              -- ^ The final result
-
-// now lets try Free f 's interpret
-// interpret :: Functor f, Monad m => f ~> m -> (Free f) ~> m
-// thus 
-// forall a. 
-// forall b. f b -> m b
-// Free f a
-// m b

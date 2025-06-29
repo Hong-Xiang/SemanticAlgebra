@@ -200,7 +200,7 @@ public class LambdaLangTests(ITestOutputHelper Output)
         var expr = BuildLambdaExpression();
 
         var v = expr.Fold(EvalAlgebraK<Sig>.GetFree());
-        var r = v.Interp(new EvalFToStateTNaturalTransform());
+        var r = v.Interprete(new EvalFToStateTNaturalTransform());
         var (rv, _) = r.Run(ImmutableDictionary<Identifier, ISigValue>.Empty);
         Assert.Equal(new SigInt(44), rv);
     }    [Fact]
@@ -212,7 +212,7 @@ public class LambdaLangTests(ITestOutputHelper Output)
         var e = S.Apply(id, S.LitI(42));
 
         var v = e.Fold(EvalAlgebraK<Sig>.GetFree());
-        var r = v.Interp(new EvalFToStateTNaturalTransform());
+        var r = v.Interprete(new EvalFToStateTNaturalTransform());
         var (rv, _) = r.Run(ImmutableDictionary<Identifier, ISigValue>.Empty);
         Assert.Equal(new SigInt(42), rv);
     }

@@ -1,5 +1,6 @@
 using SemanticAlgebra;
 using SemanticAlgebra.Data;
+using SemanticAlgebra.Fix;
 using SemanticAlgebra.Free;
 using SemanticAlgebra.Option;
 using Xunit;
@@ -61,7 +62,7 @@ public class OptionTests
                 from b in Free<SemanticAlgebra.Data.Constant<Unit>>.B.Pure(2)
                 from c in Free<SemanticAlgebra.Data.Constant<Unit>>.B.Pure(3)
                 select a + b + c;
-        var v = x.Interp(new FreeConstantToOption());
+        var v = x.Interprete(new FreeConstantToOption());
 
         // Assert
         Assert.Equal(Option.B.Some(45), v);
@@ -75,9 +76,66 @@ public class OptionTests
                 from b in Constant<Unit>.B.From<int>(Unit.Default).LiftF()
                 from c in Free<Constant<Unit>>.B.Pure(3)
                 select a + b + c;
-        var v = x.Interp(new FreeConstantToOption());
+        var v = x.Interprete(new FreeConstantToOption());
 
         // Assert
         Assert.Equal(Option.B.None<int>(), v);
+    }
+
+    [Fact]
+    public void UnfolderParserTest()
+    {
+        var unfolder = Fix<Option>.UnFolder<int>(n =>
+            n == 0
+            ? Option.B.None<int>()
+            : Option.B.Some(n - 1)
+        );
+        var o0 = Option.B.None<Fix<Option>>().Fix();
+        var o1 = Option.B.Some(o0).Fix();
+        var o2 = Option.B.Some(o1).Fix();
+        Assert.Equal(o0, unfolder(0));
+        Assert.Equal(o1, unfolder(1));
+        Assert.Equal(o2, unfolder(2));
+    }
+
+    [Fact]
+    public void AddingTopDownAttributeTest()
+    {
+        var o0 = Option.B.None<Fix<Option>>().Fix();
+        var o1 = Option.B.Some(o0).Fix();
+        var o2 = Option.B.Some(o1).Fix();
+
+
+        var o0a = Cofree<Option>.B.From(2, Option.B.None<IS<Cofree<Option>, int>>());
+        var o1a = Cofree<Option>.B.From(1, Option.B.Some(o0a));
+        var o2a = Cofree<Option>.B.From(0, Option.B.Some(o0a));
+
+        var r = o2.AddAttributeTopDown(0, (x) => x.Expr.Unfix.Select(e => (x.Attr + 1, e)));
+        Assert.Equal(o2a, r);
+    }
+
+    sealed class AttrIncrOptionSemantic : Option.ISemantic<IS<Cofree<Option>, int>, int>
+    {
+        public int None()
+            => 0;
+
+        public int Some(IS<Cofree<Option>, int> value)
+            => value.Unwrap().Head + 1;
+    }
+
+    [Fact]
+    public void AddingBottomUpAttributeTest()
+    {
+        var o0 = Option.B.None<Fix<Option>>().Fix();
+        var o1 = Option.B.Some(o0).Fix();
+        var o2 = Option.B.Some(o1).Fix();
+
+
+        var o0a = Cofree<Option>.B.From(0, Option.B.None<IS<Cofree<Option>, int>>());
+        var o1a = Cofree<Option>.B.From(1, Option.B.Some(o0a));
+        var o2a = Cofree<Option>.B.From(2, Option.B.Some(o1a));
+
+        var r = o2.AddAttributeButtomUp<int>((x) => x.Evaluate(new AttrIncrOptionSemantic()));
+        Assert.Equal(o2a, r);
     }
 }
