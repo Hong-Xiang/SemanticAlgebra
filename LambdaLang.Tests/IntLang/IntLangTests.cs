@@ -54,6 +54,21 @@ public class IntLangTests(ITestOutputHelper Output)
         Output.WriteLine(ea.ToString());
     }
 
+    sealed class CoFreeIntLangDistribute : IDistributeTransform<Cofree<IntLang>, IntLang>
+    {
+        sealed class CofreeDistributeSemantic<T> :
+            Cofree<IntLang>.IAlias<IS<IntLang, T>>.ISemantic<IS<IntLang, IS<Cofree<IntLang>, T>>>
+        {
+            public IS<IntLang, IS<Cofree<IntLang>, T>> From((IS<IntLang, T> Head, IS<IntLang, IS<Cofree<IntLang>, IS<IntLang, T>>> Tail) value)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public IS<IntLang, IS<Cofree<IntLang>, T>> Distribute<T>(IS<Cofree<IntLang>, IS<IntLang, T>> fg)
+            => fg.Evaluate(new CofreeDistributeSemantic<T>());
+    }
+
     [Fact]
     public void UnfoldNestLevelAddTopDownShouldWork()
     {

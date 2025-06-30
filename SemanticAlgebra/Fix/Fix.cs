@@ -1,6 +1,7 @@
 ﻿using SemanticAlgebra.Control;
 using SemanticAlgebra.Data;
 using SemanticAlgebra.Free;
+using System.Diagnostics;
 
 namespace SemanticAlgebra.Fix;
 
@@ -26,10 +27,12 @@ public sealed record class Fix<F>(IS<F, Fix<F>> Unfix)
 
     public static Func<T, Fix<F>> UnFolder<T>(Func<T, IS<F, T>> unfolder)
     {
-        var rec = Recursive.Create<F, T, Fix<F>>(
-            unfolder,
-            static x => x.Fix()
-        );
+        //var rec = Recursive.Create<F, T, Fix<F>>(
+        //    unfolder,
+        //    static x => x.Fix()
+        //);
+        //return rec.Run;
+        var rec = new Recurse<F, T, Fix<F>>(unfolder, x => x.Fix());
         return rec.Run;
     }
 
@@ -41,6 +44,7 @@ public sealed record class Fix<F>(IS<F, Fix<F>> Unfix)
         var unfolder = Fix<K21<CofreeF<F>, TA>>.UnFolder<(TA Attr, Fix<F> Expr)>(
             e =>
             {
+                Debug.WriteLine("test");
                 var r = step(e);
                 var hd = r.Attr;
                 var tl = r.Expr;

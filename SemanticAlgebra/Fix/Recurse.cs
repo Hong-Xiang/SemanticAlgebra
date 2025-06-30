@@ -3,6 +3,14 @@ using SemanticAlgebra.Data;
 
 namespace SemanticAlgebra.Fix;
 
+public sealed class Recurse<F, TS, TR>(
+    Func<TS, IS<F, TS>> CoAlg,
+    Func<IS<F, TR>, TR> Alg
+)
+    where F : IFunctor<F>
+{
+    public TR Run(TS a) => Alg(CoAlg(a).Select(Run));
+}
 // functor f, monad m, comonad w
 // codist : forall x. m (f x) -> f (m x)
 //   dist : froall x. f (w x) -> w (f x)
