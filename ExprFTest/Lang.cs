@@ -107,6 +107,92 @@ namespace ExprFTest;
 // body s a = (fix (comp s), a)
 // basic-block = body stmt term
 
+
+// region-body = (region-defs, basic-block)
+// region = blk(args, region-body)
+//        | loop(label, args, region-body)
+//        | if(val, region-body, region-body)   
+//        | switch(val, (lit, region-body)[])
+//        | region(label)
+
+// region-def = letB(label, region : block) | letL region : loop
+// region-defs = region-def[]
+
+// region-defs and region-body can be modeled with
+// seqs s n = s | (n, s)
+
+// rbody x = free region-def x
+
+// region-body = rbody basic-block
+// region-defs = rbody region
+
+// region-def = letB(label, blk) | letL(loop)
+// blk = blk(args, region-body)
+// loop = loop(label, args, region-body)
+
+
+// region rbF rlF l b = rbF b | rlF b | if(val, b, b) | switch(val, b, (lit, b)[]) | region l
+// blkF b = (args, b)
+// loopF l b  = (l, args, b)
+// rdef rb rl l n = letB l rb n | letL rl n
+// rbody rbF rlF l x b = free (rdef (rb b) (rl b) l) x
+
+
+// region blkF (rlF l) l (rbody (blkF (rbody   
+
+// b = rbody blkF (rlF l) l basic-block b
+
+
+// Grammar
+// region l = blk | loop | if(val, region-body, region-body) | switch(val, region-body, (lit, region)[]) | region-ref l 
+// block l = block(l, val[], region-body)
+// loop l = loop(l, val[], region-body)
+// region-body l = basic-block (region l) | letB (block l, region-body) | letL (loop l, region-body)
+
+// Recursive
+
+// rb l b = bb | letB(blockF b, b) | letL(looF b, b)
+// rdf l b = (l, val[], b)
+// rbf l b = letB (redf l b, b) | letL (redf l b, b)
+// region-body l r = free (rbf l) (bb r)
+// region l b r = block(redf l b)
+//              | loop(redf l b)
+//              | if(val, b, b)
+//              | switch(val, b, (lit, b)[])
+//              | region-ref l
+
+// r = region l (region-body l r) r
+
+// Recursive -- Refine
+
+// atom e = lit n | add e e | ...
+// expr = free atom v
+// term e r = end | ret e | jmp r e[]
+// addr a = symbol | member path a | ...
+// stmt a e n = let v e n | get v a n | set a e n | ... | push e | pop | ...
+// comp stmtf x = free stmtf x
+
+// bb sf e r = comp sf (term e r)
+
+// def b = (l, v[], b)
+// named-region b = block (def b) | loop (def b)
+// rbf b = letB (def b, b) | letL (def b, b)
+// rbd r = free named-region (bb [sf] [e] r)
+
+// scf b = | named (named-region b)
+//         | if(v, b, b)
+//         | switch(v, b, (liti32, b)[])
+//         | ...
+
+//         | label l 
+
+// rg r = scf (rbd r) | label l
+// region = free rg l 
+//      = scf (rbd rg) | label l 
+
+
+
+
 public interface IAtomSemantic<in TI, out TO>
 {
     TO LitI(int value);
@@ -318,9 +404,6 @@ sealed record class Comp2<TS, T>(Pair<TS, IComp2<TS, T>> Pair) : IComp2<TS, T>
     public override string ToString()
         => $"[C]{Pair.Stmt};{Environment.NewLine}{Pair.Next}";
 }
-
-
-
 
 interface ICompSemantic<TS, in TI, out TO>
 {
