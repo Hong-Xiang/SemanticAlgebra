@@ -94,6 +94,19 @@ public abstract partial class Cofree<F> : IComonad<Cofree<F>>
     // codist is just identity's distribute
 }
 
+public static partial class CofreeExtensions
+{
+    public static T Attr<F, T>(this IS<Cofree<F>, T> e)
+        where F : IFunctor<F>
+        => e.Unwrap().Head;
+    public static IS<F, IS<Cofree<F>, T>> Expr<F, T>(this IS<Cofree<F>, T> e)
+        where F : IFunctor<F>
+        => e.Unwrap().Tail;
+    public static IS<Cofree<F>, T> AddAttr<F, T>(this IS<F, IS<Cofree<F>, T>> e, T attr)
+        where F : IFunctor<F>
+        => Cofree<F>.B.From(attr, e);
+}
+
 // CofreeF f a b = (a, f b)
 
 // alg of (CofreeF f a) = CofreeF f a r -> r
@@ -118,6 +131,96 @@ public abstract partial class Cofree<F> : IComonad<Cofree<F>>
 // coalg : (a, fix f) -> (a, f (a, fix f))
 //                       CoFreeF f a (a, fix f)
 
+// m = identity
+// s -> f s : fix f -> f (fix f) = fix
+// disg  : forall x. f (w x) -> w (f x)
+// coalg : f (w r) -> r
+// s : fix f, r : Cofree f a (Fix (CofreeF f a))
+// w may not be Cofree f
+// input is (a, fix f) or on level open: f (a, fix f)
+// since r is Cofree f a, f (w (Cofree f a)) = f (a, fix f)
+// (w (Cofree f a)) = (a, fix f)
+// 
+
+// (f (Cofree f a) -> a) -> fix f -> a
+// if a is (Cofree f a), then coalg is f (Cofree f (Cofree f a)) -> Cofree f a 
+
+// thus given a f (annotated ast) -> annotated ast with one more layer
+
+// for the top-down, we want signature to be 
+// annotate ((a, fix f) -> (a, f (a, fix f))) -> (a, fix f) -> fix (CofreeF f a)
+//                                                             or Cofree f a
+
+// let af = (a, fix f)
+// annotate = (af -> (a, f af)) -> af -> Cofree f a
+
+// if we define p f a x = (a, f x), is functor/comonad over x
+// af = (a, fix f) = (a, f (fix f)) = p f a (fix f)
+// annotate = af -> p f a af -> af -> Cofree f a
+// thus the algebra functor is g = p f a
+// cofree f a is just fix of p
+
+// let try it by simple IntLang, thus ExprF a = lit int | add a a
+
+// and 2 simple exprssions 
+// e1 = lit 42
+// e2 = add (lit 1) (add (lit 2) (lit 3))
+
+// expected output
+// 0 <: lit 42
+// 0 <: add (1 <: lit 1) (1 <: add (2 <: lit 2) (2 <: lit 3))
+
+// annotate step : (a, f (fix f)) -> (a, f (a, fix f))
+// step (a, fe) = (a, fe.Select(x => (a + 1, x)))
+
+// for e1, step's result is 0 <: (1 <: lit 42) : (a, (a, f (fix f)))
+// for e2, step's result is 0 <: (1 <: add (lit 1) (add (lit 2) (lit 3)))
+
+// (a, fix f) -> f (a, fix f)
+
+// (a, fix f) -> fix (p f a), where p f a x = (a, f x)
+
+// f (fix (p f a)) -> fix p
+// f ((p f a) (fix p f a)) -> (p f a) (fix p f a)
+// f (a, f (fix p f a)) -> (a, f (fix p f a))
+// let t = (fix p f a)
+// f (a, f t) -> (a, f t)
+// let h = p f a
+// f (h t) -> h t
+
+
+//    (a, fix f) 
+// -> (a, f (a, fix f))
+// -> (a, f (a, f (a, fix f)))           
+
+// let t = (a, fix f)
+//    t
+// -> (a, f t)
+// -> (a, f (a, f t)) ...
+// -> (a, f (a, f (a, f (a, f t)))) ...
+
+// let p f a x = (a, f x)
+// then t = (a, fix f) ~ (a, f (fix f)) = p f a (fix f)
+// let h = p f a, t = h (fix f), (a, f t) = p f a t = h t
+//    t
+// -> h t
+// -> h (h t) ...
+
+// t -> h t, h = p f a
+// t is (a, fix f) ~ (a, f (fix f)) = h (fix f)
+
+// map f' (h t) = map f' (a, f t) over t, 
+
+// given h (fix f) -> h (h (fix f)), we have fix f -> fix h
+
+// seed is (fix f) -> h (fix f)
+
+
+
+
+
+// cofreef f a b = (a, f b)
+// fix (cofree f a) = (a, f (fix (cofree f a)))
 
 public partial class CofreeF<F> : IFunctor2<CofreeF<F>>
     where F : IFunctor<F>
@@ -169,12 +272,16 @@ public static partial class CofreeFExtensions
         where F : IFunctor<F>
         => (CofreeF<F>.ISemantic<TA, TB, TR>)semantic;
 
-    public static CofreeF<F>.D.Data<TA, TB> Prj<F, TA, TB>(
+    public static CofreeF<F>.D.Data<TA, TB> Unwrap<F, TA, TB>(
         this IS2<CofreeF<F>, TA, TB> e
     )
         where F : IFunctor<F>
         => (CofreeF<F>.D.Data<TA, TB>)e;
-
+    public static CofreeF<F>.D.Data<TA, TB> Inj<F, TA, TB>(
+         this IS<K21<CofreeF<F>, TA>, TB> e
+     )
+         where F : IFunctor<F>
+         => (CofreeF<F>.D.Data<TA, TB>)e;
 }
 
 

@@ -55,43 +55,64 @@ public sealed record class Fix<F>(IS<F, Fix<F>> Unfix)
     }
 
 
-    public IS<Cofree<F>, T> AddAttributeTopDown<T>(T seed,
+    // (a, fix f) -> cofree f a = a <: f (cofree f a)
+    // if top down, then use coalg : s -> f (m s)
+    //                   and codist : m (f x) -> f (m x)
+    // alg is f (w r) -> r, use w = cofree f a, then alg is f (cofree f a) -> cofree f a
+    // dist is source: f (x <: f (cofree f x)) -> cofree f (f x) ??
+    //                                            (f x <: cofree f (f x))
+    // f x is just head <$> source
+    // 
+    // alg f a -> r
+    public Fix<K21<CofreeF<F>, T>> AddAttributeTopDown<T>(T seed,
         Func<(T Attr, Fix<F> Expr), IS<F, (T Attr, Fix<F> Expr)>> olalg)
     {
+        // throw new NotFiniteNumberException();
         (T Attr, Fix<F> Expr) tuple = (seed, this);
         var res = olalg(tuple);
         var resCofree = res.Select(t => t.Expr.AddAttributeTopDown(t.Attr, olalg));
-        return Cofree<F>.B.From(seed, resCofree);
+        // return resCofree.Fix();
+        return CofreeF<F>.B.From(seed, resCofree).Fix();
+        // throw new NotImplementedException();
+        // AddAttributeTopDown2<K21<CofreeF<F>, T>>(
+        //     e =>
+        //     {
+        //         var v = e.Inj().Unwrap();
+        //         var vt = v.Tail;
+        //         var (ra, rt) = olalg((v.Head, v.Tail.Fix()));
+        //         var tl = rt.Select(x => CofreeF<F>.B.From(x.Attr, x.Expr.Unfix));
+        //         return CofreeF<F>.B.From(ra, tl);
+        //     },
+        //     e => CofreeF<F>.B.From<T, Fix<F>>(seed, e.Unfix)
+        // );
     }
-    public IS<Cofree<F>, T> AddAttributeButtomUp<T>(
+
+    public Fix<G> AddAttributeTopDown2<G>(
+        Func<IS<G, Fix<F>>, IS<G, IS<G, Fix<F>>>> step,
+        Func<Fix<F>, IS<G, Fix<F>>> seed
+    )
+         where G : IFunctor<G>
+        => AddAttrStep(step, seed(this));
+
+    private static Fix<G> AddAttrStep<G>(
+        Func<IS<G, Fix<F>>, IS<G, IS<G, Fix<F>>>> step,
+        IS<G, Fix<F>> e
+    )
+         where G : IFunctor<G>
+    {
+        var r = step(e);
+        return r.Select(v => AddAttrStep(step, v)).Fix();
+    }
+
+    public IS<Cofree<F>, T> AnnotateButtomUp<T>(
         Func<IS<F, IS<Cofree<F>, T>>, T> alg)
     {
         var rec = Recursive.Create<F, Fix<F>, IS<Cofree<F>, T>>(
             fx => fx.Unfix,
-            fCofree =>
-            {
-                var attr = alg(fCofree);
-                return Cofree<F>.B.From(attr, fCofree);
-            }
+            e => e.AddAttr(alg(e))
         );
         return rec.Run(this);
     }
-    public IS<Cofree<F>, T> AddAttributeButtomUp2<T>(
-        IDistributeTransform<F, Cofree<F>> dist,
-        Func<IS<F, T>, T> alg)
-    {
-        var rec = Recursive.Create<F, Fix<F>, IS<Cofree<F>, T>>(
-            fx => fx.Unfix,
-            fCofree =>
-            {
-                var c = dist.Distribute(fCofree);
-                var r = c.Select(alg);
-                return r;
-            }
-        );
-        return rec.Run(this);
-    }
-
 
     public static Fix<F> Unfold<T>(Func<T, IS<F, T>> f, T value)
         => f(value).Select(t => Unfold(f, t)).Fix();

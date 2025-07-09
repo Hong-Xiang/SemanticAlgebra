@@ -81,7 +81,7 @@ public abstract partial class Free<F> : IMonad<Free<F>>
 
         public IS<M, T> Roll(IS<F, IS<Free<F>, T>> v)
         {
-            var x = v.Select(e => e.Interprete(S));
+            var x = v.Select(e => e.Evaluate(this));
             var fx = S.Invoke(x);
             return fx.Join();
         }
@@ -106,9 +106,9 @@ public abstract partial class Free<F> : IMonad<Free<F>>
             => v;
 
         public T Roll(IS<F, IS<Free<F>, T>> v)
-            => v.Select(Fold).Evaluate(Alg);
+            => v.Select(Invoke).Evaluate(Alg);
 
-        public T Fold(IS<Free<F>, T> e)
+        private T Invoke(IS<Free<F>, T> e)
             => e.Evaluate(this);
     }
 

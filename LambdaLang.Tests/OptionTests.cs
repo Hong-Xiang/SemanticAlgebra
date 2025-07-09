@@ -110,19 +110,18 @@ public class OptionTests
         var o1a = Cofree<Option>.B.From(1, Option.B.Some(o0a));
         var o2a = Cofree<Option>.B.From(0, Option.B.Some(o0a));
 
-        var r = o2.AddAttributeTopDown(0, (x) => x.Expr.Unfix.Select(e => (x.Attr + 1, e)));
-        Assert.Equal(o2a, r);
+        throw new NotImplementedException();
+        //var r = o2.AddAttributeTopDown(0, (x) => x.Expr.Unfix.Select(e => (x.Attr + 1, e)));
+        //Assert.Equal(o2a, r);
     }
+
 
     sealed class AttrIncrOptionSemantic : Option.ISemantic<IS<Cofree<Option>, int>, int>
     {
-        public int None()
-            => 0;
-
+        public int None() => 0;
         public int Some(IS<Cofree<Option>, int> value)
-            => value.Unwrap().Head + 1;
+            => value.Attr() + 1;
     }
-
 
     [Fact]
     public void AddingBottomUpAttributeTest()
@@ -136,46 +135,7 @@ public class OptionTests
         var o1a = Cofree<Option>.B.From(1, Option.B.Some(o0a));
         var o2a = Cofree<Option>.B.From(2, Option.B.Some(o1a));
 
-        var r = o2.AddAttributeButtomUp<int>((x) => x.Evaluate(new AttrIncrOptionSemantic()));
-        Assert.Equal(o2a, r);
-    }
-
-    sealed class AttrIncrOptionSemantic2 : Option.ISemantic<int, int>
-    {
-        public int None()
-            => 0;
-
-        public int Some(int value)
-            => value + 1;
-    }
-
-    sealed class OptionCofreeDistribute : IDistributeTransform<Option, Cofree<Option>>
-    {
-        sealed class TransformSemantic<T> : Option.ISemantic<IS<Cofree<Option>, T>, IS<Cofree<Option>, IS<Option, T>>>
-        {
-            public IS<Cofree<Option>, IS<Option, T>> None()
-                => Cofree<Option>.B.From(Option.B.None<T>(), Option.B.None<IS<Cofree<Option>, IS<Option, T>>>());
-
-            public IS<Cofree<Option>, IS<Option, T>> Some(IS<Cofree<Option>, T> value)
-                => value.Select(Option.B.Some);
-        }
-        public IS<Cofree<Option>, IS<Option, T>> Distribute<T>(IS<Option, IS<Cofree<Option>, T>> fg)
-            => fg.Evaluate(new TransformSemantic<T>());
-    }
-
-    [Fact]
-    public void AddingBottomUpAttributeTest2()
-    {
-        var o0 = Option.B.None<Fix<Option>>().Fix();
-        var o1 = Option.B.Some(o0).Fix();
-        var o2 = Option.B.Some(o1).Fix();
-
-
-        var o0a = Cofree<Option>.B.From(0, Option.B.None<IS<Cofree<Option>, int>>());
-        var o1a = Cofree<Option>.B.From(1, Option.B.Some(o0a));
-        var o2a = Cofree<Option>.B.From(2, Option.B.Some(o1a));
-
-        var r = o2.AddAttributeButtomUp2<int>(new OptionCofreeDistribute(), (x) => x.Evaluate(new AttrIncrOptionSemantic2()));
+        var r = o2.AnnotateButtomUp(new AttrIncrOptionSemantic().ToFunc());
         Assert.Equal(o2a, r);
     }
 

@@ -15,9 +15,9 @@ public partial interface Atom
     , IMergedSemantic1<Atom, Lit, Arith>
 {
     static ISemantic1<Atom, TS, TR> IMergedSemantic1<Atom, Lit, Arith>.MergeSemantic<TS, TR>(
-     ISemantic1<Lit, TS, TR> s1,
-     ISemantic1<Arith, TS, TR> s2)
-     => CreateMergeSemantic(s1, s2);
+      ISemantic1<Lit, TS, TR> s1,
+      ISemantic1<Arith, TS, TR> s2)
+      => CreateMergeSemantic(s1, s2);
 
     static ISemantic1<Atom, TS, TR> CreateMergeSemantic<TS, TR>(
      ISemantic1<Lit, TS, TR> s1,
@@ -26,7 +26,7 @@ public partial interface Atom
 
 
 
-    public interface ISemantic<in TI, out TO>
+    public new interface ISemantic<in TI, out TO>
         : ISemantic1<Atom, TI, TO>
         , Lit.ISemantic<TI, TO>
         , Arith.ISemantic<TI, TO>
