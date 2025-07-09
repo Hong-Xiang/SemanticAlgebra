@@ -29,5 +29,11 @@ public partial interface Lit
         public IS<M, string> LitI(int value)
             => M.Pure($"lit {value}");
     }
+
+    public sealed class ShowSemantic : ISemantic<string, string>
+    {
+        public string LitI(int value)
+            => value.ToString();
+    }
 }
 

@@ -87,6 +87,30 @@ public abstract partial class Free<F> : IMonad<Free<F>>
         }
     }
 
+    internal sealed record class LiftNaturalTransformSemantic<G, TS>(
+        INaturalTransform<F, G> F1
+    ) : ISemantic<TS, IS<Free<G>, TS>>
+        where G : IFunctor<G>
+    {
+        public IS<Free<G>, TS> Pure(TS v)
+            => Free<G>.B.Pure(v);
+
+        public IS<Free<G>, TS> Roll(IS<F, IS<Free<F>, TS>> v)
+            => Free<G>.B.Roll(F1.Invoke(v.Select(e => e.Evaluate(this))));
+    }
+
+    internal sealed record class FoldSemantic<T>(ISemantic1<F, T, T> Alg)
+        : ISemantic<T, T>
+    {
+        public T Pure(T v)
+            => v;
+
+        public T Roll(IS<F, IS<Free<F>, T>> v)
+            => v.Select(Fold).Evaluate(Alg);
+
+        public T Fold(IS<Free<F>, T> e)
+            => e.Evaluate(this);
+    }
 
     //sealed class DistributeTransformImpl<G>
     //    : IDistributeTransform<Free<F>, G>
@@ -138,6 +162,23 @@ public static partial class FreePreludeExtension
         public T Roll(IS<F, IS<Free<F>, T>> v)
             => v.Select(e => e.Evaluate(this)).Evaluate(nest);
     }
+
+    public static IS<Free<G>, T> Select1<F, G, T>(
+        this IS<Free<F>, T> e,
+        INaturalTransform<F, G> f1
+    )
+        where F : IFunctor<F>
+        where G : IFunctor<G>
+        => e.Evaluate(new Free<F>.LiftNaturalTransformSemantic<G, T>(f1));
+
+
+    public static T Fold<F, T>(
+        this IS<Free<F>, T> e,
+        ISemantic1<F, T, T> alg
+    )
+        where F : IFunctor<F>
+        => e.Evaluate(new Free<F>.FoldSemantic<T>(alg));
+
 
     //public static Free<F>.IAlias<TS>.ISemantic<TR> Prj<F, S, TS, TR>(this
     //    ISemantic1<Free<F>, TS, TR> s)

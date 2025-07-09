@@ -22,6 +22,22 @@ public class Tests(ITestOutputHelper Output)
     }
 
     [Fact]
+    public void MinimumLetLang()
+    {
+        var b = new ScfLang<string>();
+        var expr = from x in b.Bind("%0", b.LitI(40))
+                   from y in b.Bind("%1", b.LitI(2))
+                   from z in b.Bind("%2", b.Add(x, y))
+                   select b.Add(x, z);
+        Output.WriteLine(expr.ToString());
+
+        var es = expr.Select(e => "ret " + e.Show());
+        var es2 = es.SelectExp(e => e.Show());
+        var code = es2.Fold(new StmtShowSemantic());
+        Output.WriteLine(code);
+    }
+
+    [Fact]
     public void SimpleLoopShouldWork()
     {
         // C# code

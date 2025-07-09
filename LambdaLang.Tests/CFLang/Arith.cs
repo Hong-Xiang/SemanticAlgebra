@@ -46,6 +46,19 @@ public partial interface Arith
                 from s in M.Get()
                 select s.Line($"({va}) < ({vb})");
     }
+
+    public sealed class ShowSemantic : ISemantic<string, string>
+    {
+        public string Add(string a, string b)
+            => $"({a} + {b})";
+
+        public string Ceq(string a, string b)
+            => $"({a} == {b})";
+
+
+        public string Clt(string a, string b)
+            => $"({a} < {b})";
+    }
 }
 
 public sealed class ArithShowF
