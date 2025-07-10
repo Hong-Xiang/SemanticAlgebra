@@ -179,6 +179,8 @@ namespace ExprFTest;
 // rbf b = letB (def b, b) | letL (def b, b)
 // rbd r = free named-region (bb [sf] [e] r)
 
+// rbd x = free named-region x
+
 // scf b = | named (named-region b)
 //         | if(v, b, b)
 //         | switch(v, b, (liti32, b)[])
@@ -186,9 +188,104 @@ namespace ExprFTest;
 
 //         | label l 
 
-// rg r = scf (rbd r) | label l
+// region-body = rbd (bb s e r)
+
+// rg r = scf (rbd (bb  ))
 // region = free rg l 
 //      = scf (rbd rg) | label l 
+
+interface INamedRegionSemantic<in TLabel, in TValue, in TBody, out TResult>
+{
+    TResult Block(TLabel label, IReadOnlyList<TValue> args, TBody body);
+    TResult Loop(TLabel label, IReadOnlyList<TValue> args, TBody body);
+
+    //Func<INamedRegion<TLabel, TValue, TBody>, TResult> ToFunc()
+        //=> e => e.Evaluate(this);
+}
+
+interface INamedRegion<out TLabel, out TValue, out TBody>
+{
+    TLabel Label { get; }
+    IReadOnlyList<TValue> Args { get; }
+    TBody Body { get; }
+    INamedRegion<TLabel, TValue, TResult> Select<TResult>(Func<TBody, TResult> f);
+    INamedRegion<TLR, TVR, TBR> Select<TLR, TVR, TBR>(Func<TLabel, TLR> fl, Func<TValue, TVR> fv, Func<TBody, TBR> fb);
+    TResult Evaluate<TResult>(INamedRegionSemantic<TLabel, TValue, TBody, TResult> semantic);
+}
+
+sealed record class Block<TLabel, TValue, TBody>(TLabel Label, IReadOnlyList<TValue> Args, TBody Body)
+    : INamedRegion<TLabel, TValue, TBody>
+{
+    public TResult Evaluate<TResult>(INamedRegionSemantic<TLabel, TValue, TBody, TResult> semantic)
+        => semantic.Block(Label, Args, Body);
+
+    public INamedRegion<TLabel, TValue, TResult> Select<TResult>(Func<TBody, TResult> f)
+        => new Block<TLabel, TValue, TResult>(Label, Args, f(Body));
+
+    public INamedRegion<TLR, TVR, TBR> Select<TLR, TVR, TBR>(Func<TLabel, TLR> fl, Func<TValue, TVR> fv, Func<TBody, TBR> fb)
+        => new Block<TLR, TVR, TBR>(fl(Label), [.. Args.Select(fv)], fb(Body));
+}
+
+sealed record class Loop<TLabel, TValue, TBody>(TLabel Label, IReadOnlyList<TValue> Args, TBody Body)
+    : INamedRegion<TLabel, TValue, TBody>
+{
+    public TResult Evaluate<TResult>(INamedRegionSemantic<TLabel, TValue, TBody, TResult> semantic)
+        => semantic.Loop(Label, Args, Body);
+
+    public INamedRegion<TLabel, TValue, TResult> Select<TResult>(Func<TBody, TResult> f)
+        => new Loop<TLabel, TValue, TResult>(Label, Args, f(Body));
+
+    public INamedRegion<TLR, TVR, TBR> Select<TLR, TVR, TBR>(Func<TLabel, TLR> fl, Func<TValue, TVR> fv, Func<TBody, TBR> fb)
+        => new Loop<TLR, TVR, TBR>(fl(Label), [.. Args.Select(fv)], fb(Body));
+}
+
+interface IBasicBlock<out TLabel, out TValue, out TExpr, out TRegion>
+{
+}
+
+// free (named-region l v) x
+interface IRegionBodySemantic<in TLable, in TValue, in TI, out TO>
+{
+    TO Pure(TI value);
+    TO Nest(INamedRegion<TLable, TValue, IRegionBody<TLable, TValue, TI>> region);
+}
+
+interface IRegionBody<out TLabel, out TValue, out T>
+{
+    TResult Evaluate<TResult>(IRegionBodySemantic<TLabel, TValue, T, TResult> semantic);
+}
+
+interface ISwitchCase<out TRegion>
+{
+    int Case { get; }
+    TRegion Target { get; }
+}
+
+interface IControlFlowSemantic<in TLabel, in TValue, in TExpr, in TRegionBody, out TResult>
+{
+    TResult Named(TLabel label, TRegionBody region);
+    TResult If(TExpr value, TRegionBody then, TRegionBody @else);
+    TResult Switch(TExpr value, IReadOnlyList<ISwitchCase<TRegionBody>> cases);
+}
+
+interface IControlFlow<out TLabel, out TValue, out TExpr, out TRegionBody>
+{
+    TResult Evaluate<TResult>(IControlFlowSemantic<TLabel, TValue, TExpr, TRegionBody, TResult> semantic);
+}
+
+// region-body l v basic-block
+interface IRegionSemantic<in TLabel, in TValue, in TExpr, in TRegion, out TResult>
+{
+    TResult Region(IControlFlow<TLabel, TValue, TExpr, IRegionBody<TLabel, TValue, IBasicBlock<TLabel, TValue, TExpr, TRegion>>> controlFlow);
+    TResult Label(TLabel label);
+}
+
+interface IRegion<out TLabel, out TValue, out TExpr, out TRegion>
+{
+    TResult Evaluate<TResult>(IRegionSemantic<TLabel, TValue, TExpr, TRegion, TResult> semantic);
+}
+
+
 
 
 
