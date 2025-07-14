@@ -1,23 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Immutable;
 
 namespace ExprFTest;
-
-
-//sealed record class Let<TV, T>(T Value, Func<TV, T> Next) : IExpr<T>
-//{
-//    public TR Evaluate<V, TR>(IExprSemantic<T, V, TR> semantic)
-//        => semantic.Let(Value, Next); // compile error here on Next
-
-//    public IExpr<TR> Select<TR>(Func<T, TR> selector)
-//    {
-//        return new Let<TV, TR>(selector(Value), Next); // compile error here on Next
-//    }
-//}
 
 // variables are holes in the expr
 // thus e.g. add (hold v, lit 1) etc
@@ -48,7 +31,6 @@ namespace ExprFTest;
 // term = var v | atom term
 // seqs = term | (let(v, atom term), seqs)
 
-
 // alg :: f a -> a
 // algM :: m a -> a, 
 
@@ -58,7 +40,6 @@ namespace ExprFTest;
 
 // expr = free atom v
 
-
 // stmt r a v e = let v e | load v a | store a e | jump r e[] | ret | ret e
 // seqs s n = single s | append (n, s)
 
@@ -66,13 +47,11 @@ namespace ExprFTest;
 // stmtF l a v e n = let v e n | load v a n | store a e n
 // body = free (stmtF l a v expr) (term l)
 
-
 // IIdentifier
 
 // IValueIdentifier
 
 // IIdentifier<TRegion, TAddress, 
-
 
 // pair a b = (a, b), functor over b
 // seqs s n = s | (n, s) = free (pair s) n
@@ -95,7 +74,6 @@ namespace ExprFTest;
 
 // prog = fix (region r (fix (seqs (stmt r a v (free atom v))))
 
-
 // now focus on small simple part
 // atom e = lit n | add e e
 // expr = free atom v = var v | atom expr
@@ -106,7 +84,6 @@ namespace ExprFTest;
 // comp s p = (p, s)
 // body s a = (fix (comp s), a)
 // basic-block = body stmt term
-
 
 // region-body = (region-defs, basic-block)
 // region = blk(args, region-body)
@@ -130,18 +107,15 @@ namespace ExprFTest;
 // blk = blk(args, region-body)
 // loop = loop(label, args, region-body)
 
-
 // region rbF rlF l b = rbF b | rlF b | if(val, b, b) | switch(val, b, (lit, b)[]) | region l
 // blkF b = (args, b)
 // loopF l b  = (l, args, b)
 // rdef rb rl l n = letB l rb n | letL rl n
 // rbody rbF rlF l x b = free (rdef (rb b) (rl b) l) x
 
-
 // region blkF (rlF l) l (rbody (blkF (rbody   
 
 // b = rbody blkF (rlF l) l basic-block b
-
 
 // Grammar
 // region l = blk | loop | if(val, region-body, region-body) | switch(val, region-body, (lit, region)[]) | region-ref l 
@@ -167,7 +141,7 @@ namespace ExprFTest;
 
 // atom e = lit n | add e e | ...
 // expr = free atom v
-// term e r = end | ret e | jmp r e[]
+// term e r = end | ret e | br r e[] | BrIf(e (r e[]) (r e[]) | Swich(e, (r e[]), (lit, r e[])[]) | ... 
 // addr a = symbol | member path a | ...
 // stmt a e n = let v e n | get v a n | set a e n | ... | push e | pop | ...
 // comp stmtf x = free stmtf x
@@ -194,101 +168,136 @@ namespace ExprFTest;
 // region = free rg l 
 //      = scf (rbd rg) | label l 
 
-interface INamedRegionSemantic<in TLabel, in TValue, in TBody, out TResult>
-{
-    TResult Block(TLabel label, IReadOnlyList<TValue> args, TBody body);
-    TResult Loop(TLabel label, IReadOnlyList<TValue> args, TBody body);
+// grammar - refine
+// atom e = lit n | add e e | ...
+// addr a = symbol | member path a | ...
+// expr = free atom v
+// stmt e n = let v e n | get v (e: a) n | set (e: a) e n | ... | push e | pop | ...
+// join r e = (r, e[])
+// term e r = End | Ret e | Br(join r e) | BrIf(e, join r e, join r e) | Swich(e, join r e, (lit, join r e)[]) | ... 
+// comp stmtf x = free stmtf x
 
-    //Func<INamedRegion<TLabel, TValue, TBody>, TResult> ToFunc()
-        //=> e => e.Evaluate(this);
+// bb sf e r = comp sf (term e r)
+
+// def b = (l, v[], b)
+// named-region b = block (def b) | loop (def b)
+// region-body b = let (named-region b, b)
+// regionDefinition r = free region-body (bb [sf] [e] r)
+// region = free RegionDefinition | label l
+
+// rbd x = free named-region x
+
+// scf b = | named (named-region b)
+//         | if(v, b, b)
+//         | switch(v, b, (liti32, b)[])
+//         | ...
+
+//         | label l 
+
+// region-body = rbd (bb s e r)
+
+// rg r = scf (rbd (bb  ))
+// region = free rg l 
+//      = scf (rbd rg) | label l 
+
+interface IRegionSemantic<TLabel, in TB, out TO>
+{
+    TO Block(TLabel label, TB body);
+    TO Loop(TLabel label, TB body);
+    TO Label(TLabel label);
 }
 
-interface INamedRegion<out TLabel, out TValue, out TBody>
+interface IRegionFoldSemantic<TLabel, TP, TBI, TRI, TBO, TRO>
+    : ISeqPairSemantic<TRI, TP, TBI, TBO>
+    , IRegionSemantic<TLabel, TBI, TRO>
+{
+}
+
+interface IRegion<TLabel, out TB>
 {
     TLabel Label { get; }
-    IReadOnlyList<TValue> Args { get; }
-    TBody Body { get; }
-    INamedRegion<TLabel, TValue, TResult> Select<TResult>(Func<TBody, TResult> f);
-    INamedRegion<TLR, TVR, TBR> Select<TLR, TVR, TBR>(Func<TLabel, TLR> fl, Func<TValue, TVR> fv, Func<TBody, TBR> fb);
-    TResult Evaluate<TResult>(INamedRegionSemantic<TLabel, TValue, TBody, TResult> semantic);
+    TBR Eval<TBR>(IRegionSemantic<TLabel, TB, TBR> semantic);
+    IRegion<TLabel, TRR> Select<TRR>(Func<TB, TRR> f);
 }
 
-sealed record class Block<TLabel, TValue, TBody>(TLabel Label, IReadOnlyList<TValue> Args, TBody Body)
-    : INamedRegion<TLabel, TValue, TBody>
+sealed record class BlockR<TLabel, TB>(TLabel Label, TB Body)
+    : IRegion<TLabel, TB>
 {
-    public TResult Evaluate<TResult>(INamedRegionSemantic<TLabel, TValue, TBody, TResult> semantic)
-        => semantic.Block(Label, Args, Body);
+    public TBR Eval<TBR>(IRegionSemantic<TLabel, TB, TBR> semantic)
+        => semantic.Block(Label, Body);
 
-    public INamedRegion<TLabel, TValue, TResult> Select<TResult>(Func<TBody, TResult> f)
-        => new Block<TLabel, TValue, TResult>(Label, Args, f(Body));
-
-    public INamedRegion<TLR, TVR, TBR> Select<TLR, TVR, TBR>(Func<TLabel, TLR> fl, Func<TValue, TVR> fv, Func<TBody, TBR> fb)
-        => new Block<TLR, TVR, TBR>(fl(Label), [.. Args.Select(fv)], fb(Body));
+    public IRegion<TLabel, TRR> Select<TRR>(Func<TB, TRR> f)
+        => new BlockR<TLabel, TRR>(Label, f(Body));
 }
 
-sealed record class Loop<TLabel, TValue, TBody>(TLabel Label, IReadOnlyList<TValue> Args, TBody Body)
-    : INamedRegion<TLabel, TValue, TBody>
+sealed record class LoopR<TLabel, TB>(TLabel Label, TB Body)
+    : IRegion<TLabel, TB>
 {
-    public TResult Evaluate<TResult>(INamedRegionSemantic<TLabel, TValue, TBody, TResult> semantic)
-        => semantic.Loop(Label, Args, Body);
+    public TBR Eval<TBR>(IRegionSemantic<TLabel, TB, TBR> semantic)
+        => semantic.Loop(Label, Body);
 
-    public INamedRegion<TLabel, TValue, TResult> Select<TResult>(Func<TBody, TResult> f)
-        => new Loop<TLabel, TValue, TResult>(Label, Args, f(Body));
-
-    public INamedRegion<TLR, TVR, TBR> Select<TLR, TVR, TBR>(Func<TLabel, TLR> fl, Func<TValue, TVR> fv, Func<TBody, TBR> fb)
-        => new Loop<TLR, TVR, TBR>(fl(Label), [.. Args.Select(fv)], fb(Body));
+    public IRegion<TLabel, TBR> Select<TBR>(Func<TB, TBR> f)
+        => new LoopR<TLabel, TBR>(Label, f(Body));
 }
 
-interface IBasicBlock<out TLabel, out TValue, out TExpr, out TRegion>
+sealed record class LabelR<TLabel, TB>(TLabel Label)
+    : IRegion<TLabel, TB>
 {
+    public TBR Eval<TBR>(IRegionSemantic<TLabel, TB, TBR> semantic)
+        => semantic.Label(Label);
+
+    public IRegion<TLabel, TBR> Select<TBR>(Func<TB, TBR> f)
+        => new LabelR<TLabel, TBR>(Label);
 }
 
-// free (named-region l v) x
-interface IRegionBodySemantic<in TLable, in TValue, in TI, out TO>
+sealed record class Region<TLabel, TP>(IRegion<TLabel, SeqPair<Region<TLabel, TP>, TP>> Value)
 {
-    TO Pure(TI value);
-    TO Nest(INamedRegion<TLable, TValue, IRegionBody<TLable, TValue, TI>> region);
+    public Region<TLabel, TR> Select<TR>(Func<TP, TR> f)
+        => throw new NotImplementedException();
+
+    public override string ToString()
+        => $"[R]({Value})";
+
+    public static Region<TLabel, TP> Block(TLabel label, SeqPair<Region<TLabel, TP>, TP> body)
+        => new BlockR<TLabel, SeqPair<Region<TLabel, TP>, TP>>(label, body).Fix();
+
+    public static Region<TLabel, TP> Loop(TLabel label, SeqPair<Region<TLabel, TP>, TP> body)
+        => new LoopR<TLabel, SeqPair<Region<TLabel, TP>, TP>>(label, body).Fix();
+
+    public static Region<TLabel, TP> Label(TLabel label) =>
+        new LabelR<TLabel, SeqPair<Region<TLabel, TP>, TP>>(label).Fix();
+
+    sealed class FoldSemantic<TBR, TRR>(IRegionFoldSemantic<TLabel, TP, TBR, TRR, TBR, TRR> semantic)
+        : IRegionFoldSemantic<TLabel, TP, SeqPair<Region<TLabel, TP>, TP>, Region<TLabel, TP>, TBR, TRR>
+    {
+        public TRR Block(TLabel label, SeqPair<Region<TLabel, TP>, TP> body)
+            => semantic.Block(label, body.Value.Eval(this));
+
+        public TRR Label(TLabel label)
+            => semantic.Label(label);
+
+        public TBR Concat(Region<TLabel, TP> region, SeqPair<Region<TLabel, TP>, TP> value)
+            => semantic.Concat(region.Value.Eval(this), value.Value.Eval(this));
+
+        public TRR Loop(TLabel label, SeqPair<Region<TLabel, TP>, TP> body)
+            => semantic.Loop(label, body.Value.Eval(this));
+
+        public TBR Single(TP value)
+            => semantic.Single(value);
+    }
+
+    public TR Fold<TBR, TR>(IRegionFoldSemantic<TLabel, TP, TBR, TR, TBR, TR> semantic)
+        => Value.Eval(new FoldSemantic<TBR, TR>(semantic));
 }
 
-interface IRegionBody<out TLabel, out TValue, out T>
+static class RegionExtension
 {
-    TResult Evaluate<TResult>(IRegionBodySemantic<TLabel, TValue, T, TResult> semantic);
+    public static Region<TLabel, TP> Fix<TLabel, TP>(this IRegion<TLabel, SeqPair<Region<TLabel, TP>, TP>> x)
+        => new(x);
+
+    public static SeqPair<Region<TLabel, TP>, Region<TLabel, TP>> Bind<TLabel, TP>(this Region<TLabel, TP> x) =>
+        SeqPair.Concat(x, SeqPair.SingleH(Region<TLabel, TP>.Label(x.Value.Label)));
 }
-
-interface ISwitchCase<out TRegion>
-{
-    int Case { get; }
-    TRegion Target { get; }
-}
-
-interface IControlFlowSemantic<in TLabel, in TValue, in TExpr, in TRegionBody, out TResult>
-{
-    TResult Named(TLabel label, TRegionBody region);
-    TResult If(TExpr value, TRegionBody then, TRegionBody @else);
-    TResult Switch(TExpr value, IReadOnlyList<ISwitchCase<TRegionBody>> cases);
-}
-
-interface IControlFlow<out TLabel, out TValue, out TExpr, out TRegionBody>
-{
-    TResult Evaluate<TResult>(IControlFlowSemantic<TLabel, TValue, TExpr, TRegionBody, TResult> semantic);
-}
-
-// region-body l v basic-block
-interface IRegionSemantic<in TLabel, in TValue, in TExpr, in TRegion, out TResult>
-{
-    TResult Region(IControlFlow<TLabel, TValue, TExpr, IRegionBody<TLabel, TValue, IBasicBlock<TLabel, TValue, TExpr, TRegion>>> controlFlow);
-    TResult Label(TLabel label);
-}
-
-interface IRegion<out TLabel, out TValue, out TExpr, out TRegion>
-{
-    TResult Evaluate<TResult>(IRegionSemantic<TLabel, TValue, TExpr, TRegion, TResult> semantic);
-}
-
-
-
-
-
 
 public interface IAtomSemantic<in TI, out TO>
 {
@@ -296,7 +305,6 @@ public interface IAtomSemantic<in TI, out TO>
 
     TO Add(TI left, TI right);
 }
-
 
 interface IAtom<out T>
 {
@@ -316,7 +324,6 @@ sealed record class Lit<T>(int Value) : IAtom<T>
     public override string ToString()
         => Value.ToString();
 }
-
 
 sealed record class Add<T>(T L, T R) : IAtom<T>
 {
@@ -339,14 +346,16 @@ interface IExprSemantic<in TI, out TO>
 
 interface IExpr<out T>
 {
-    TR Evaluate<V, TR>(IExprSemantic<T, TR> semantic);
+    TR Evaluate<TR>(IExprSemantic<T, TR> semantic);
     IExpr<TR> Select<TR>(Func<T, TR> selector);
     IExpr<TR> SelectMany<TR>(Func<T, IExpr<TR>> selector);
+
+    TR Fold<TR>(IAtomSemantic<TR, TR> atom, Func<T, TR> pure);
 }
 
 sealed record class Val<TV>(TV Value) : IExpr<TV>
 {
-    public TR Evaluate<V, TR>(IExprSemantic<TV, TR> semantic)
+    public TR Evaluate<TR>(IExprSemantic<TV, TR> semantic)
         => semantic.Val(Value);
 
     public IExpr<TR> Select<TR>(Func<TV, TR> selector)
@@ -355,13 +364,16 @@ sealed record class Val<TV>(TV Value) : IExpr<TV>
     public IExpr<TR> SelectMany<TR>(Func<TV, IExpr<TR>> selector)
         => selector(Value);
 
+    public TR Fold<TR>(IAtomSemantic<TR, TR> atom, Func<TV, TR> pure)
+        => pure(Value);
+
     public override string ToString()
         => $"%{Value}";
 }
 
 sealed record class Exp<TV>(IAtom<IExpr<TV>> Expr) : IExpr<TV>
 {
-    public TR Evaluate<V, TR>(IExprSemantic<TV, TR> semantic)
+    public TR Evaluate<TR>(IExprSemantic<TV, TR> semantic)
         => semantic.Exp(Expr);
 
     public IExpr<TR> Select<TR>(Func<TV, TR> selector)
@@ -370,12 +382,42 @@ sealed record class Exp<TV>(IAtom<IExpr<TV>> Expr) : IExpr<TV>
     public IExpr<TR> SelectMany<TR>(Func<TV, IExpr<TR>> selector)
         => new Exp<TR>(Expr.Select(e => e.SelectMany(selector)));
 
+    public TR Fold<TR>(IAtomSemantic<TR, TR> atom, Func<TV, TR> pure)
+        => Expr.Select(e => e.Fold(atom, pure)).Evaluate(atom);
+
     public override string ToString()
         => $"({Expr})";
 }
 
-sealed record class Ret<T>(T? Expr)
+interface IJump<out TR, out TV>
 {
+    TR Region { get; }
+    IReadOnlyList<TV> Args { get; }
+}
+
+interface ITerminatorSemantic<in TR, in TE, out TO>
+{
+    TO End();
+    TO Ret(TE value);
+    TO Br(IJump<TR, TE> target);
+    TO BrIf(TE Value, IJump<TR, TE> targetTrue, IJump<TR, TE> targetFalse);
+}
+
+interface ITerminator<out TR, out TE>
+{
+    TO Evaluate<TO>(ITerminatorSemantic<TR, TE, TO> semantic);
+    ITerminator<TRR, TER> Select<TRR, TER>(Func<TR, TRR> f, Func<TE, TER> g);
+}
+
+sealed record class Ret<TR, TE>(TE Expr)
+    : ITerminator<TR, TE>
+{
+    public TO Evaluate<TO>(ITerminatorSemantic<TR, TE, TO> semantic)
+        => semantic.Ret(Expr);
+
+    public ITerminator<TRR, TER> Select<TRR, TER>(Func<TR, TRR> f, Func<TE, TER> g)
+        => new Ret<TRR, TER>(g(Expr));
+
     public override string ToString()
         => $"ret {Expr}";
 }
@@ -428,313 +470,202 @@ sealed record class Load<TV, TE>(TV Val, Variable Target) : IStmt<TV, TE>
 //                = t | (s, t | (s, t | (s, fix (body s t))))
 //                ~ t | (s, t) | (s, (s, t)) | ...
 
-
 // pair a b = (a, b)
 // body s t = free (pair s) t
 
-interface IPairSemantic<in TS, in TN, out TO>
+// atom t
+// expr v = pure v | atom (expr v)
+
+interface IAlgebraS<TRegion, TValue, TExpr, TStmt, TTerm, TSeq>
+    : IAtomSemantic<TExpr, TExpr>
+    , IStmtSemantic<TValue, TExpr, TStmt>
+    , ISeqPairSemantic<TStmt, TTerm, TSeq, TSeq>
+    , ITerminatorSemantic<TRegion, TExpr, TTerm>
 {
-    TO Pair(TS stmt, TN next);
+    TExpr Val(TValue v);
 }
 
-interface IPair<out TS, out TN>
+sealed class ShowAlgebra
+    : IAlgebraS<string, int, string, string, string, IEnumerable<string>>
 {
-    TR Evaluate<TR>(IPairSemantic<TS, TN, TR> semantic);
-    IPair<TS, TR> Select<TR>(Func<TN, TR> f);
-    IPair<TSR, TNR> Select<TSR, TNR>(Func<TS, TSR> fs, Func<TN, TNR> fn);
-}
+    public string LitI(int value)
+        => $"{value}";
 
-sealed record class Pair<S, N>(S Stmt, N Next) : IPair<S, N>
-{
-    public TR Evaluate<TR>(IPairSemantic<S, N, TR> semantic)
-        => semantic.Pair(Stmt, Next);
+    public string Add(string left, string right)
+        => $"({left} + {right})";
 
-    public IPair<S, TR> Select<TR>(Func<N, TR> f)
-        => new Pair<S, TR>(Stmt, f(Next));
+    public string Let(int val, string expr)
+        => $"let %{val} = {expr}";
 
-    public IPair<TSR, TNR> Select<TSR, TNR>(Func<S, TSR> fs, Func<N, TNR> fn)
-        => new Pair<TSR, TNR>(fs(Stmt), fn(Next));
-}
+    public string Load(int val, Variable variable)
+        => $"%{val} <- {variable}";
 
-interface IComp2Semantic<TS, TI, out TO>
-{
-    TO Pure(TI value);
-    TO Free(Pair<TS, IComp2<TS, TI>> pair);
-}
+    public IEnumerable<string> Single(string value)
+        => [value];
 
-interface IComp2<TS, T>
-{
-    TR Evaluate<TR>(IComp2Semantic<TS, T, TR> semantic);
-    IComp2<TS, TR> Select<TR>(Func<T, TR> f);
-    IComp2<TS, TR> SelectMany<TR>(Func<T, IComp2<TS, TR>> f);
-}
+    public IEnumerable<string> Concat(string head, IEnumerable<string> tail)
+        => [head, ..tail];
 
-sealed record class Pure2<TS, T>(T Ret) : IComp2<TS, T>
-{
-    public TR Evaluate<TR>(IComp2Semantic<TS, T, TR> semantic)
-        => semantic.Pure(Ret);
+    public string End()
+        => "end";
 
-    public IComp2<TS, TR> Select<TR>(Func<T, TR> f)
-        => new Pure2<TS, TR>(f(Ret));
+    public string Ret(string value)
+        => $"ret {value}";
 
-    public IComp2<TS, TR> SelectMany<TR>(Func<T, IComp2<TS, TR>> f)
-        => f(Ret);
-
-    public override string ToString()
-        => $"[T]{Ret}";
-}
-
-sealed record class Comp2<TS, T>(Pair<TS, IComp2<TS, T>> Pair) : IComp2<TS, T>
-{
-    public TR Evaluate<TR>(IComp2Semantic<TS, T, TR> semantic)
-        => semantic.Free(Pair);
-
-    public IComp2<TS, TR> Select<TR>(Func<T, TR> f)
+    private string Jump(IJump<string, string> jump)
     {
-        var p = Pair.Select(c => c.Select(f));
-        return new Comp2<TS, TR>((Pair<TS, IComp2<TS, TR>>)p);
+        var args = string.Join(',', jump.Args);
+        return $"^{jump.Region}({args})";
     }
 
-    public IComp2<TS, TR> SelectMany<TR>(Func<T, IComp2<TS, TR>> f)
-        => new Comp2<TS, TR>((Pair<TS, IComp2<TS, TR>>)Pair.Select(c => c.SelectMany(f)));
+    public string Br(IJump<string, string> target)
+        => $"br {Jump(target)}";
 
-    public override string ToString()
-        => $"[C]{Pair.Stmt};{Environment.NewLine}{Pair.Next}";
+    public string BrIf(string Value, IJump<string, string> targetTrue, IJump<string, string> targetFalse)
+        => $"brif({Value}, {Jump(targetTrue)}, {Jump(targetFalse)})";
+
+    public string Val(int v)
+        => $"%{v}";
 }
 
-interface ICompSemantic<TS, in TI, out TO>
+sealed record class Env<TValue>(
+    ImmutableDictionary<Variable, int> Vars,
+    ImmutableDictionary<TValue, int> Values
+)
+    where TValue : notnull
 {
-    TO Pure(TI terminator);
-    TO Comp(TS stmt, IComp<TS, TI> next);
+    public int this[TValue val]
+        => Values[val];
+
+    public int this[Variable v]
+        => Vars[v];
+
+    public Env<TValue> Add(TValue v, int value)
+        => this with { Values = Values.Add(v, value) };
 }
 
-interface IComp<TS, out T>
+sealed class EvalAlgebra<TValue>
+    : IAlgebraS<string, TValue,
+        Func<Env<TValue>, int>,
+        Func<Env<TValue>, Env<TValue>>,
+        Func<Env<TValue>, ITerminator<string, int>>,
+        Func<Env<TValue>, ITerminator<string, int>>>
+    where TValue : notnull
 {
-    public TR Evaluate<TR>(ICompSemantic<TS, T, TR> semantic);
-    public IComp<TS, TR> Select<TR>(Func<T, TR> f);
-    public IComp<TS, TR> SelectMany<TR>(Func<T, IComp<TS, TR>> f);
+    public Func<Env<TValue>, int> LitI(int value)
+        => env => value;
+
+    public Func<Env<TValue>, int> Add(Func<Env<TValue>, int> left, Func<Env<TValue>, int> right)
+        => env => left(env) + right(env);
+
+    public Func<Env<TValue>, Env<TValue>> Let(TValue val, Func<Env<TValue>, int> expr)
+        => env => env.Add(val, expr(env));
+
+    public Func<Env<TValue>, Env<TValue>> Load(TValue val, Variable variable)
+        => env => env.Add(val, env[variable]);
+
+    public Func<Env<TValue>, ITerminator<string, int>> Single(Func<Env<TValue>, ITerminator<string, int>> value)
+        => env => value(env);
+
+    public Func<Env<TValue>, ITerminator<string, int>> Concat(Func<Env<TValue>, Env<TValue>> head,
+        Func<Env<TValue>, ITerminator<string, int>> tail)
+        => env => tail(head(env));
+
+    public Func<Env<TValue>, ITerminator<string, int>> End()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Func<Env<TValue>, ITerminator<string, int>> Ret(Func<Env<TValue>, int> value)
+        => env => new Ret<string, int>(value(env));
+
+    public Func<Env<TValue>, ITerminator<string, int>> Br(IJump<string, Func<Env<TValue>, int>> target)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Func<Env<TValue>, ITerminator<string, int>> BrIf(Func<Env<TValue>, int> Value,
+        IJump<string, Func<Env<TValue>, int>> targetTrue, IJump<string, Func<Env<TValue>, int>> targetFalse)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Func<Env<TValue>, int> Val(TValue v)
+        => env => env[v];
 }
 
-sealed record class Pure<TS, T>(T Ret) : IComp<TS, T>
+static class EvalExtension
 {
-    public TR Evaluate<TR>(ICompSemantic<TS, T, TR> semantic)
-        => semantic.Pure(Ret);
+    sealed class Folder<TRegion, TValue, TExpr, TStmt, TTerm, TSeq>(
+        IAlgebraS<TRegion, TValue, TExpr, TStmt, TTerm, TSeq> algebra)
+    {
+        public TExpr Fold(IExpr<TValue> exp)
+            => exp.Fold(algebra, algebra.Val);
 
-    public IComp<TS, TR> Select<TR>(Func<T, TR> f)
-        => new Pure<TS, TR>(f(Ret));
+        public TStmt Fold(IStmt<TValue, IExpr<TValue>> stmt)
+            => stmt.Select(Fold).Evaluate(algebra);
 
-    public IComp<TS, TR> SelectMany<TR>(Func<T, IComp<TS, TR>> f)
-        => f(Ret);
+        public TTerm Fold(ITerminator<TRegion, IExpr<TValue>> term)
+            => term.Select(x => x, Fold).Evaluate(algebra);
 
-    public override string ToString()
-        => $"[T]{Ret}";
+        public TSeq Fold(SeqPair<IStmt<TValue, IExpr<TValue>>, ITerminator<TRegion, IExpr<TValue>>> seq)
+        {
+            return seq.Value.Select(
+                Fold,
+                Fold,
+                Fold
+            ).Eval(algebra);
+        }
+    }
+
+    public static TSeq Fold<TRegion, TValue, TExpr, TStmt, TTerm, TSeq>(
+        this SeqPair<IStmt<TValue, IExpr<TValue>>, ITerminator<TRegion, IExpr<TValue>>> stmt,
+        IAlgebraS<TRegion, TValue, TExpr, TStmt, TTerm, TSeq> algebra)
+    {
+        return new Folder<TRegion, TValue, TExpr, TStmt, TTerm, TSeq>(algebra).Fold(stmt);
+    }
 }
 
-sealed record class Comp<TS, T>(TS Stmt, IComp<TS, T> Next) : IComp<TS, T>
-{
-    public TR Evaluate<TR>(ICompSemantic<TS, T, TR> semantic)
-        => semantic.Comp(Stmt, Next);
-
-    public IComp<TS, TR> Select<TR>(Func<T, TR> f)
-        => new Comp<TS, TR>(Stmt, Next.Select(f));
-
-    public IComp<TS, TR> SelectMany<TR>(Func<T, IComp<TS, TR>> f)
-        => new Comp<TS, TR>(Stmt, Next.SelectMany(f));
-
-    public override string ToString()
-        => $"[C]{Stmt};{Environment.NewLine}{Next}";
-}
-
-sealed class Factory<TV>(Func<TV> CreateValue)
+sealed class FactoryS<TR, TV>(Func<TV> CreateValue)
 {
     public IExpr<TV> Lit(int value)
         => new Exp<TV>(new Lit<IExpr<TV>>(value));
+
     public IExpr<TV> Add(IExpr<TV> l, IExpr<TV> r)
         => new Exp<TV>(new Add<IExpr<TV>>(l, r));
+
     public IExpr<TV> Val(TV val)
         => new Val<TV>(val);
 
-    public IComp<IStmt<TV, IExpr<TV>>, IExpr<TV>> Let(
+    public SeqPair<IStmt<TV, IExpr<TV>>, IExpr<TV>> Let(
         IExpr<TV> expr
     )
     {
         var v = CreateValue();
-        return new Comp<IStmt<TV, IExpr<TV>>, IExpr<TV>>(
-            new Let<TV, IExpr<TV>>(v, expr),
-            new Pure<IStmt<TV, IExpr<TV>>, IExpr<TV>>(Val(v))
-        );
+        IStmt<TV, IExpr<TV>> stmt = new Let<TV, IExpr<TV>>(v, expr);
+        return SeqPair.Concat(new Let<TV, IExpr<TV>>(v, expr), SeqPair<IStmt<TV, IExpr<TV>>, IExpr<TV>>.Single(Val(v)));
     }
 
-    public IComp<IStmt<TV, IExpr<TV>>, IExpr<TV>> Load(
+    public SeqPair<IStmt<TV, IExpr<TV>>, IExpr<TV>> Load(
         Variable target
     )
     {
         var v = CreateValue();
-        return new Comp<IStmt<TV, IExpr<TV>>, IExpr<TV>>(
-            new Load<TV, IExpr<TV>>(v, target),
-            new Pure<IStmt<TV, IExpr<TV>>, IExpr<TV>>(Val(v))
-        );
+        IStmt<TV, IExpr<TV>> stmt = new Load<TV, IExpr<TV>>(v, target);
+        return SeqPair.ConcatL(stmt, Val(v));
     }
 
-
-    public Ret<IExpr<TV>> Return(
+    public ITerminator<TR, IExpr<TV>> Return(
         IExpr<TV> expr
-    ) => new Ret<IExpr<TV>>(expr);
+    ) => new Ret<TR, IExpr<TV>>(expr);
 }
-
-sealed class Factory2<TV>(Func<TV> CreateValue)
-{
-    public IExpr<TV> Lit(int value)
-        => new Exp<TV>(new Lit<IExpr<TV>>(value));
-    public IExpr<TV> Add(IExpr<TV> l, IExpr<TV> r)
-        => new Exp<TV>(new Add<IExpr<TV>>(l, r));
-    public IExpr<TV> Val(TV val)
-        => new Val<TV>(val);
-
-    public IComp2<IStmt<TV, IExpr<TV>>, IExpr<TV>> Let(
-        IExpr<TV> expr
-    )
-    {
-        var v = CreateValue();
-        return Test.Pair(
-            new Let<TV, IExpr<TV>>(v, expr),
-            new Pure2<IStmt<TV, IExpr<TV>>, IExpr<TV>>(Val(v))
-        ).Lift();
-    }
-
-    public IComp2<IStmt<TV, IExpr<TV>>, IExpr<TV>> Load(
-        Variable target
-    )
-    {
-        var v = CreateValue();
-        return Test.Pair(
-            new Load<TV, IExpr<TV>>(v, target),
-            new Pure2<IStmt<TV, IExpr<TV>>, IExpr<TV>>(Val(v))
-        ).Lift();
-    }
-
-
-    public Ret<IExpr<TV>> Return(
-        IExpr<TV> expr
-    ) => new Ret<IExpr<TV>>(expr);
-}
-
-
-
 
 static class Test
 {
-    public static IPair<S, N> Pair<S, N>(S s, N n) => new Pair<S, N>(s, n);
-
-    public static IComp2<TS, T> Lift<TS, T>(this IPair<TS, IComp2<TS, T>> pair)
-        => new Comp2<TS, T>((Pair<TS, IComp2<TS, T>>)pair);
-
-    public static IComp<TStmt, TR> SelectMany<TStmt, TS, TM, TR>(
-        this IComp<TStmt, TS> source,
-        Func<TS, IComp<TStmt, TM>> collectionSelector,
-        Func<TS, TM, TR> resultSelector)
-         => source.SelectMany(s => collectionSelector(s).Select(m => resultSelector(s, m)));
-
-    public static IComp2<TStmt, TR> SelectMany<TStmt, TS, TM, TR>(
-           this IComp2<TStmt, TS> source,
-           Func<TS, IComp2<TStmt, TM>> collectionSelector,
-           Func<TS, TM, TR> resultSelector)
-            => source.SelectMany(s => collectionSelector(s).Select(m => resultSelector(s, m)));
-
-
-
-    public static IComp<IStmt<TV, IExpr<TV>>, Ret<IExpr<TV>>> TestProgram<TV>(Factory<TV> b)
-           => from x in b.Let(b.Add(b.Lit(1), b.Lit(2))) // desired syntax corrected to use let
-              from y in b.Let(b.Add(b.Lit(3), b.Lit(4)))
-              from u in b.Load(new Variable("x"))
-              from z in b.Let(b.Add(u, x))
-              select b.Return(b.Add(x, z));
-
-    public static IComp<IStmt<TV, IExpr<TV>>, Ret<IExpr<TV>>> TestProgram2<TV>(Factory<TV> b)
-           => from x in b.Let(b.Add(b.Lit(1), b.Lit(2))) // desired syntax corrected to use let
-              from y in b.Let(b.Add(b.Lit(3), b.Lit(4)))
-              from u in b.Load(new Variable("x"))
-              from z in b.Let(b.Add(u, x))
-              select b.Return(b.Add(x, z));
-
-
-
-    public static T Evaluate<TV, T>(
-        this IComp<IStmt<TV, IExpr<TV>>, Ret<IExpr<TV>>> prog,
-        IAlgebra<TV, T> algebra)
-        => prog switch
-        {
-            Pure<IStmt<TV, IExpr<TV>>, Ret<IExpr<TV>>> pure =>
-                algebra.Pure(pure.Ret.Expr.Evaluate(algebra)),
-            Comp<IStmt<TV, IExpr<TV>>, Ret<IExpr<TV>>> comp =>
-                comp.Next.Evaluate(comp.Stmt.Select(e => e.Evaluate(algebra)).Evaluate(algebra)),
-            _ => throw new InvalidOperationException()
-        };
-
-    public static T Evaluate<TV, T>(
-        this IExpr<TV> expr,
-        IAlgebra<TV, T> algebra)
-        => expr switch
-        {
-            Val<TV> val => algebra.Val(val.Value),
-            Exp<TV> nest => nest.Expr.Select(e => e.Evaluate(algebra)).Evaluate(algebra),
-            _ => throw new InvalidOperationException()
-        };
-
-    //public static T Evaluate2<TV, T>(
-    //       this IComp2<IStmt<TV, IExpr<TV>>, Ret<IExpr<TV>>> prog,
-    //       IAlgebra<TV, T> algebra)
-    //       => prog switch
-    //       {
-    //           Pure2<IStmt<TV, IExpr<TV>>, Ret<IExpr<TV>>> pure =>
-    //               algebra.Pure(pure.Ret.Expr.Evaluate(algebra)),
-    //           Comp2<IStmt<TV, IExpr<TV>>, Ret<IExpr<TV>>> comp =>
-    //               comp.Pair.Stmt .Evaluate(comp.Stmt.Select(e => e.Evaluate(algebra)).Evaluate(algebra)),
-    //           _ => throw new InvalidOperationException()
-    //       };
-
-    //public static T Evaluate2<TV, T>(
-    //    this IExpr<TV> expr,
-    //    IAlgebra<TV, T> algebra)
-    //    => expr switch
-    //    {
-    //        Val<TV> val => algebra.Val(val.Value),
-    //        Exp<TV> nest => nest.Expr.Select(e => e.Evaluate(algebra)).Evaluate(algebra),
-    //        _ => throw new InvalidOperationException()
-    //    };
-
-}
-
-interface IAlgebra<TV, T>
-    : IStmtSemantic<TV, T, IAlgebra<TV, T>>
-    , IAtomSemantic<T, T>
-{
-    T Val(TV value);
-    T Pure(T value);
-}
-
-sealed record class SimpleEvalAlgebra<TV>(
-    IReadOnlyDictionary<string, int> Vars,
-    ImmutableDictionary<TV, int> Env
-)
-    : IAlgebra<TV, int>
-    where TV : notnull
-{
-    public int Add(int left, int right)
-        => left + right;
-
-    public IAlgebra<TV, int> Let(TV val, int expr)
-        => this with { Env = Env.Add(val, expr) };
-
-    public int LitI(int value)
-        => value;
-
-    public IAlgebra<TV, int> Load(TV val, Variable variable)
-        => this with { Env = Env.Add(val, Vars[variable.Name]) };
-
-    public int Pure(int terminator)
-        => terminator;
-
-    public int Val(TV value)
-        => Env[value];
+    public static SeqPair<IStmt<TV, IExpr<TV>>, ITerminator<TR, IExpr<TV>>> TestProgram<TR, TV>(FactoryS<TR, TV> b)
+        => from x in b.Let(b.Add(b.Lit(1), b.Lit(2)))
+           from y in b.Let(b.Add(b.Lit(3), b.Lit(4)))
+           from u in b.Load(new Variable("x"))
+           from z in b.Let(b.Add(u, x))
+           select b.Return(b.Add(x, z));
 }

@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SourceGeneratorCoreTest", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExprFTest", "ExprFTest\ExprFTest.csproj", "{70B8B245-F36C-426B-B430-B9918B6365B3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LangExtDslTest", "LangExtDslTest\LangExtDslTest.csproj", "{FCC969D7-89DD-41C0-9E3A-5D998F7E9D2F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +43,10 @@ Global
 		{70B8B245-F36C-426B-B430-B9918B6365B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{70B8B245-F36C-426B-B430-B9918B6365B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{70B8B245-F36C-426B-B430-B9918B6365B3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FCC969D7-89DD-41C0-9E3A-5D998F7E9D2F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FCC969D7-89DD-41C0-9E3A-5D998F7E9D2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FCC969D7-89DD-41C0-9E3A-5D998F7E9D2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FCC969D7-89DD-41C0-9E3A-5D998F7E9D2F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
